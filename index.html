@@ -938,6 +938,506 @@
       cursor: pointer;
       white-space: nowrap;
     }
+
+    /* Dashboard Toggle */
+    .dashboard-toggle {
+      margin-bottom: 20px;
+    }
+
+    .toggle-btn {
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-btn:hover {
+      background: var(--bg-elevated);
+      border-color: var(--accent-blue);
+    }
+
+    .toggle-btn.active {
+      background: rgba(77, 159, 255, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Dashboard Section */
+    .dashboard-section {
+      margin-bottom: 24px;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Period Tabs */
+    .period-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: var(--bg-card);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: fit-content;
+    }
+
+    .period-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .period-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    .period-btn.active {
+      background: var(--accent-blue);
+      color: white;
+    }
+
+    /* Period Summary Stats */
+    .period-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .period-stat {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .period-stat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    .period-stat.income::before { background: var(--accent-in); }
+    .period-stat.expense::before { background: var(--accent-out); }
+    .period-stat.net::before { background: var(--accent-blue); }
+    .period-stat.transactions::before { background: var(--accent-yellow); }
+
+    .period-stat-icon {
+      font-size: 24px;
+      opacity: 0.9;
+    }
+
+    .period-stat-content {
+      flex: 1;
+    }
+
+    .period-stat-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .period-stat-value {
+      display: block;
+      font-family: 'Space Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .period-stat.income .period-stat-value { color: var(--accent-in); }
+    .period-stat.expense .period-stat-value { color: var(--accent-out); }
+    .period-stat.net .period-stat-value { color: var(--accent-blue); }
+    .period-stat.net .period-stat-value.negative { color: var(--accent-out); }
+
+    .period-stat-change {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .period-stat-change.positive {
+      background: rgba(0, 212, 170, 0.15);
+      color: var(--accent-in);
+    }
+
+    .period-stat-change.negative {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--accent-out);
+    }
+
+    .period-stat-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(77, 159, 255, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .period-stat-badge.loss {
+      background: rgba(255, 107, 107, 0.15);
+      color: var(--accent-out);
+    }
+
+    .period-stat-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .charts-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .chart-card.wide {
+      grid-column: 1 / -1;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .chart-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .chart-period-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .legend-item.income .legend-dot { background: var(--accent-in); }
+    .legend-item.expense .legend-dot { background: var(--accent-out); }
+
+    .chart-container {
+      position: relative;
+      height: 200px;
+    }
+
+    .chart-container.wide {
+      height: 250px;
+    }
+
+    /* Insights Grid */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .insight-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .insight-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .insight-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .insight-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+    }
+
+    .insight-name {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .insight-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .insight-bar {
+      height: 4px;
+      background: var(--bg-primary);
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .insight-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .insight-bar-fill.expense { background: var(--accent-out); }
+    .insight-bar-fill.income { background: var(--accent-in); }
+
+    /* Search and Filter Section */
+    .search-filter-section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 40px 12px 40px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(77, 159, 255, 0.15);
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 12px;
+      background: var(--bg-elevated);
+      border: none;
+      color: var(--text-secondary);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .clear-search:hover {
+      background: var(--accent-out);
+      color: white;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group select {
+      padding: 12px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 13px;
+      cursor: pointer;
+      min-width: 130px;
+    }
+
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+    }
+
+    /* Filter active state */
+    .filter-active {
+      border-color: var(--accent-blue) !important;
+      background: rgba(77, 159, 255, 0.1) !important;
+    }
+
+    /* No results message */
+    .no-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .no-results .icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .filter-summary {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .filter-summary.show {
+      display: block;
+    }
+
+    /* Responsive charts */
+    @media (max-width: 1024px) {
+      .period-summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .insights-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .period-summary {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .period-tabs {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .period-btn {
+        flex: 1;
+        padding: 10px 12px;
+        font-size: 12px;
+      }
+      
+      .search-filter-section {
+        flex-direction: column;
+      }
+      
+      .filter-group {
+        width: 100%;
+      }
+      
+      .filter-group select {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .period-summary {
+        grid-template-columns: 1fr;
+      }
+      
+      .period-stat {
+        padding: 12px;
+      }
+      
+      .period-stat-value {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -981,6 +1481,163 @@
       <div class="summary-card fee">
         <div class="summary-label">Total Fees</div>
         <div class="summary-value" id="totalFees">₱0.00</div>
+      </div>
+    </div>
+
+    <!-- Dashboard Toggle -->
+    <div class="dashboard-toggle">
+      <button class="toggle-btn" id="dashboardToggle" onclick="toggleDashboard()">
+        📊 <span id="dashboardToggleText">Show Dashboard</span>
+      </button>
+    </div>
+
+    <!-- Dashboard Charts Section -->
+    <div class="dashboard-section" id="dashboardSection" style="display: none;">
+      
+      <!-- Period Selector Tabs -->
+      <div class="period-tabs">
+        <button class="period-btn active" onclick="changePeriod('daily')" id="periodDaily">📅 Daily</button>
+        <button class="period-btn" onclick="changePeriod('weekly')" id="periodWeekly">📆 Weekly</button>
+        <button class="period-btn" onclick="changePeriod('monthly')" id="periodMonthly">🗓️ Monthly</button>
+      </div>
+
+      <!-- Period Summary Stats -->
+      <div class="period-summary">
+        <div class="period-stat income">
+          <div class="period-stat-icon">📈</div>
+          <div class="period-stat-content">
+            <span class="period-stat-label">Total Income</span>
+            <span class="period-stat-value" id="periodIncome">₱0.00</span>
+          </div>
+          <div class="period-stat-change positive" id="incomeChange">+0%</div>
+        </div>
+        <div class="period-stat expense">
+          <div class="period-stat-icon">📉</div>
+          <div class="period-stat-content">
+            <span class="period-stat-label">Total Expenses</span>
+            <span class="period-stat-value" id="periodExpense">₱0.00</span>
+          </div>
+          <div class="period-stat-change negative" id="expenseChange">-0%</div>
+        </div>
+        <div class="period-stat net">
+          <div class="period-stat-icon">💰</div>
+          <div class="period-stat-content">
+            <span class="period-stat-label">Net Cash Flow</span>
+            <span class="period-stat-value" id="periodNet">₱0.00</span>
+          </div>
+          <div class="period-stat-badge" id="netBadge">Profit</div>
+        </div>
+        <div class="period-stat transactions">
+          <div class="period-stat-icon">📝</div>
+          <div class="period-stat-content">
+            <span class="period-stat-label">Transactions</span>
+            <span class="period-stat-value" id="periodTransactions">0</span>
+          </div>
+          <div class="period-stat-sub" id="transactionsSub">0 IN / 0 OUT</div>
+        </div>
+      </div>
+
+      <!-- Charts Grid -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>📊 Income vs Expenses</h3>
+            <span class="chart-period-label" id="chartPeriodLabel">Last 7 Days</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="cashFlowChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>🥧 Expense Categories</h3>
+          </div>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <div class="charts-grid single">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <h3>📈 Cash Flow Trend</h3>
+            <div class="chart-legend">
+              <span class="legend-item income"><span class="legend-dot"></span> Income</span>
+              <span class="legend-item expense"><span class="legend-dot"></span> Expenses</span>
+            </div>
+          </div>
+          <div class="chart-container wide">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Categories / Insights -->
+      <div class="insights-grid">
+        <div class="insight-card">
+          <h4>🏆 Top Expense Categories</h4>
+          <div class="insight-list" id="topExpensesList">
+            <div class="insight-item">
+              <span class="insight-name">Loading...</span>
+              <span class="insight-value">₱0.00</span>
+            </div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <h4>📊 Income Sources</h4>
+          <div class="insight-list" id="incomeSourcesList">
+            <div class="insight-item">
+              <span class="insight-name">Loading...</span>
+              <span class="insight-value">₱0.00</span>
+            </div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <h4>⏰ Busiest Shift</h4>
+          <div class="insight-list" id="busiestShiftList">
+            <div class="insight-item">
+              <span class="insight-name">Loading...</span>
+              <span class="insight-value">0 transactions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search remarks, amount..." oninput="filterRecords()">
+        <button class="clear-search" id="clearSearch" onclick="clearSearch()" style="display: none;">✕</button>
+      </div>
+      <div class="filter-group">
+        <select id="dateFilter" onchange="filterRecords()">
+          <option value="all">📅 All Time</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+        <select id="categoryFilter" onchange="filterRecords()">
+          <option value="all">📁 All Categories</option>
+          <optgroup label="Fund IN">
+            <option value="Remittance">Remittance</option>
+            <option value="Additional Funds">Additional Funds</option>
+          </optgroup>
+          <optgroup label="Fund OUT">
+            <option value="Cashout">Cashout</option>
+            <option value="Expenses">Expenses</option>
+            <option value="Savings">Savings</option>
+          </optgroup>
+        </select>
+        <select id="shiftFilter" onchange="filterRecords()">
+          <option value="all">⏰ All Shifts</option>
+          <option value="4AM-12NN">4AM-12NN</option>
+          <option value="12NN-8PM">12NN-8PM</option>
+          <option value="8PM-4AM">8PM-4AM</option>
+        </select>
       </div>
     </div>
 
@@ -1199,14 +1856,25 @@
     <button class="install-btn" onclick="installPWA()">Install</button>
   </div>
 
+  <!-- Chart.js Library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <script>
     // State
     let currentTab = 'in';
     let records = { in: [], out: [] };
+    let filteredRecords = { in: [], out: [] };
     let googleSheetsUrl = localStorage.getItem('googleSheetsUrl') || '';
     let currentPhotoBase64 = null;
     let deleteTargetId = null;
     let deferredPrompt = null;
+    
+    // Chart instances
+    let cashFlowChart = null;
+    let categoryChart = null;
+    let comparisonChart = null;
+    let dashboardVisible = false;
+    let currentPeriod = 'daily'; // daily, weekly, monthly
 
     // Categories
     const categories = {
@@ -1216,7 +1884,12 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-      loadFromStorage();  // Load local first (for offline support)
+      loadFromStorage();
+      
+      // Initialize filtered records
+      filteredRecords.in = [...records.in];
+      filteredRecords.out = [...records.out];
+      
       setDefaultDateTime();
       updateUI();
       updateConnectionStatus();
@@ -1391,6 +2064,623 @@
       }
     });
 
+    // Dashboard Toggle
+    function toggleDashboard() {
+      dashboardVisible = !dashboardVisible;
+      const section = document.getElementById('dashboardSection');
+      const btn = document.getElementById('dashboardToggle');
+      const text = document.getElementById('dashboardToggleText');
+      
+      if (dashboardVisible) {
+        section.style.display = 'block';
+        btn.classList.add('active');
+        text.textContent = 'Hide Dashboard';
+        initCharts();
+        updateDashboard();
+      } else {
+        section.style.display = 'none';
+        btn.classList.remove('active');
+        text.textContent = 'Show Dashboard';
+      }
+    }
+
+    // Change Period (Daily/Weekly/Monthly)
+    function changePeriod(period) {
+      currentPeriod = period;
+      
+      // Update active button
+      document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`period${period.charAt(0).toUpperCase() + period.slice(1)}`).classList.add('active');
+      
+      // Update dashboard
+      updateDashboard();
+    }
+
+    // Get date range based on period
+    function getPeriodDates(period) {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      
+      let startDate, labels = [], groupBy;
+      
+      switch (period) {
+        case 'daily':
+          // Last 7 days
+          startDate = new Date(today);
+          startDate.setDate(startDate.getDate() - 6);
+          startDate.setHours(0, 0, 0, 0);
+          groupBy = 'day';
+          for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            labels.push({
+              date: d,
+              label: d.toLocaleDateString('en-PH', { weekday: 'short', day: 'numeric' })
+            });
+          }
+          break;
+          
+        case 'weekly':
+          // Last 8 weeks
+          startDate = new Date(today);
+          startDate.setDate(startDate.getDate() - (7 * 8));
+          startDate.setHours(0, 0, 0, 0);
+          groupBy = 'week';
+          for (let i = 7; i >= 0; i--) {
+            const weekEnd = new Date(today);
+            weekEnd.setDate(weekEnd.getDate() - (i * 7));
+            const weekStart = new Date(weekEnd);
+            weekStart.setDate(weekStart.getDate() - 6);
+            labels.push({
+              startDate: weekStart,
+              endDate: weekEnd,
+              label: `${weekStart.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}`
+            });
+          }
+          break;
+          
+        case 'monthly':
+          // Last 6 months
+          startDate = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+          groupBy = 'month';
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            labels.push({
+              month: d.getMonth(),
+              year: d.getFullYear(),
+              label: d.toLocaleDateString('en-PH', { month: 'short', year: '2-digit' })
+            });
+          }
+          break;
+      }
+      
+      return { startDate, endDate: today, labels, groupBy };
+    }
+
+    // Update entire dashboard
+    function updateDashboard() {
+      if (!dashboardVisible) return;
+      
+      const periodData = getPeriodDates(currentPeriod);
+      
+      // Update period label
+      const periodLabels = {
+        daily: 'Last 7 Days',
+        weekly: 'Last 8 Weeks',
+        monthly: 'Last 6 Months'
+      };
+      document.getElementById('chartPeriodLabel').textContent = periodLabels[currentPeriod];
+      
+      // Calculate stats for current period
+      const currentStats = calculatePeriodStats(periodData.startDate, periodData.endDate);
+      
+      // Calculate stats for previous period (for comparison)
+      const periodLength = periodData.endDate - periodData.startDate;
+      const prevEndDate = new Date(periodData.startDate.getTime() - 1);
+      const prevStartDate = new Date(prevEndDate.getTime() - periodLength);
+      const prevStats = calculatePeriodStats(prevStartDate, prevEndDate);
+      
+      // Update summary stats
+      updatePeriodSummary(currentStats, prevStats);
+      
+      // Update charts
+      updateCharts(periodData);
+      
+      // Update insights
+      updateInsights(periodData.startDate, periodData.endDate);
+    }
+
+    // Calculate stats for a period
+    function calculatePeriodStats(startDate, endDate) {
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+      
+      const filteredIn = records.in.filter(r => {
+        if (!r.date) return false;
+        return r.date >= startStr && r.date <= endStr;
+      });
+      
+      const filteredOut = records.out.filter(r => {
+        if (!r.date) return false;
+        return r.date >= startStr && r.date <= endStr;
+      });
+      
+      const totalIn = filteredIn.reduce((sum, r) => sum + (r.amount || 0), 0);
+      const totalOut = filteredOut.reduce((sum, r) => sum + (r.amount || 0), 0);
+      
+      return {
+        income: totalIn,
+        expense: totalOut,
+        net: totalIn - totalOut,
+        inCount: filteredIn.length,
+        outCount: filteredOut.length,
+        totalCount: filteredIn.length + filteredOut.length
+      };
+    }
+
+    // Update period summary cards
+    function updatePeriodSummary(current, prev) {
+      // Income
+      document.getElementById('periodIncome').textContent = formatCurrency(current.income);
+      const incomeChange = prev.income > 0 ? ((current.income - prev.income) / prev.income * 100) : 0;
+      const incomeChangeEl = document.getElementById('incomeChange');
+      incomeChangeEl.textContent = `${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(0)}%`;
+      incomeChangeEl.className = `period-stat-change ${incomeChange >= 0 ? 'positive' : 'negative'}`;
+      
+      // Expense
+      document.getElementById('periodExpense').textContent = formatCurrency(current.expense);
+      const expenseChange = prev.expense > 0 ? ((current.expense - prev.expense) / prev.expense * 100) : 0;
+      const expenseChangeEl = document.getElementById('expenseChange');
+      expenseChangeEl.textContent = `${expenseChange >= 0 ? '+' : ''}${expenseChange.toFixed(0)}%`;
+      expenseChangeEl.className = `period-stat-change ${expenseChange <= 0 ? 'positive' : 'negative'}`;
+      
+      // Net
+      const netEl = document.getElementById('periodNet');
+      netEl.textContent = formatCurrency(Math.abs(current.net));
+      netEl.className = `period-stat-value ${current.net < 0 ? 'negative' : ''}`;
+      const netBadge = document.getElementById('netBadge');
+      netBadge.textContent = current.net >= 0 ? 'Profit' : 'Loss';
+      netBadge.className = `period-stat-badge ${current.net < 0 ? 'loss' : ''}`;
+      
+      // Transactions
+      document.getElementById('periodTransactions').textContent = current.totalCount;
+      document.getElementById('transactionsSub').textContent = `${current.inCount} IN / ${current.outCount} OUT`;
+    }
+
+    // Update insights section
+    function updateInsights(startDate, endDate) {
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+      
+      const filteredIn = records.in.filter(r => r.date >= startStr && r.date <= endStr);
+      const filteredOut = records.out.filter(r => r.date >= startStr && r.date <= endStr);
+      
+      // Top Expense Categories
+      const expenseByCategory = {};
+      filteredOut.forEach(r => {
+        const cat = r.category || 'Other';
+        expenseByCategory[cat] = (expenseByCategory[cat] || 0) + r.amount;
+      });
+      
+      const sortedExpenses = Object.entries(expenseByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      const maxExpense = sortedExpenses.length > 0 ? sortedExpenses[0][1] : 0;
+      
+      document.getElementById('topExpensesList').innerHTML = sortedExpenses.length > 0 
+        ? sortedExpenses.map(([cat, amount]) => `
+            <div class="insight-item">
+              <span class="insight-name">${cat}</span>
+              <span class="insight-value">${formatCurrency(amount)}</span>
+            </div>
+            <div class="insight-bar">
+              <div class="insight-bar-fill expense" style="width: ${(amount / maxExpense * 100)}%"></div>
+            </div>
+          `).join('')
+        : '<div class="insight-item"><span class="insight-name">No data</span></div>';
+      
+      // Income Sources
+      const incomeByCategory = {};
+      filteredIn.forEach(r => {
+        const cat = r.category || 'Other';
+        incomeByCategory[cat] = (incomeByCategory[cat] || 0) + r.amount;
+      });
+      
+      const sortedIncome = Object.entries(incomeByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      const maxIncome = sortedIncome.length > 0 ? sortedIncome[0][1] : 0;
+      
+      document.getElementById('incomeSourcesList').innerHTML = sortedIncome.length > 0
+        ? sortedIncome.map(([cat, amount]) => `
+            <div class="insight-item">
+              <span class="insight-name">${cat}</span>
+              <span class="insight-value">${formatCurrency(amount)}</span>
+            </div>
+            <div class="insight-bar">
+              <div class="insight-bar-fill income" style="width: ${(amount / maxIncome * 100)}%"></div>
+            </div>
+          `).join('')
+        : '<div class="insight-item"><span class="insight-name">No data</span></div>';
+      
+      // Busiest Shift
+      const allRecords = [...filteredIn, ...filteredOut];
+      const shiftCounts = {};
+      allRecords.forEach(r => {
+        const shift = r.shift || 'Unknown';
+        shiftCounts[shift] = (shiftCounts[shift] || 0) + 1;
+      });
+      
+      const sortedShifts = Object.entries(shiftCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+      
+      document.getElementById('busiestShiftList').innerHTML = sortedShifts.length > 0
+        ? sortedShifts.map(([shift, count]) => `
+            <div class="insight-item">
+              <span class="insight-name">${shift}</span>
+              <span class="insight-value">${count} txns</span>
+            </div>
+          `).join('')
+        : '<div class="insight-item"><span class="insight-name">No data</span></div>';
+    }
+
+    // Initialize Charts
+    function initCharts() {
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b8b9e', font: { size: 10 } },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          },
+          y: {
+            ticks: { 
+              color: '#8b8b9e', 
+              font: { size: 10 },
+              callback: (value) => '₱' + (value / 1000).toFixed(0) + 'k'
+            },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          }
+        }
+      };
+
+      // Cash Flow Chart (Bar)
+      const cashFlowCtx = document.getElementById('cashFlowChart').getContext('2d');
+      if (cashFlowChart) cashFlowChart.destroy();
+      cashFlowChart = new Chart(cashFlowCtx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Income',
+              data: [],
+              backgroundColor: 'rgba(0, 212, 170, 0.8)',
+              borderRadius: 4
+            },
+            {
+              label: 'Expenses',
+              data: [],
+              backgroundColor: 'rgba(255, 107, 107, 0.8)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: chartOptions
+      });
+
+      // Category Pie Chart
+      const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Cashout', 'Expenses', 'Savings'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: [
+              'rgba(255, 107, 107, 0.8)',
+              'rgba(255, 159, 26, 0.8)',
+              'rgba(157, 78, 221, 0.8)'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#8b8b9e',
+                font: { family: 'DM Sans', size: 11 },
+                padding: 15,
+                usePointStyle: true
+              }
+            }
+          }
+        }
+      });
+
+      // Comparison Line Chart
+      const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+      if (comparisonChart) comparisonChart.destroy();
+      comparisonChart = new Chart(comparisonCtx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Income',
+              data: [],
+              borderColor: '#00d4aa',
+              backgroundColor: 'rgba(0, 212, 170, 0.1)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointBackgroundColor: '#00d4aa'
+            },
+            {
+              label: 'Expenses',
+              data: [],
+              borderColor: '#ff6b6b',
+              backgroundColor: 'rgba(255, 107, 107, 0.1)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 4,
+              pointBackgroundColor: '#ff6b6b'
+            }
+          ]
+        },
+        options: {
+          ...chartOptions,
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // Update Charts with Data
+    function updateCharts(periodData) {
+      if (!dashboardVisible) return;
+      
+      const { labels, groupBy, startDate, endDate } = periodData;
+      const chartLabels = labels.map(l => l.label);
+      const inData = [];
+      const outData = [];
+      
+      // Calculate data for each period
+      labels.forEach((period, index) => {
+        let periodIn = 0, periodOut = 0;
+        
+        if (groupBy === 'day') {
+          const dateStr = period.date.toISOString().split('T')[0];
+          periodIn = records.in.filter(r => r.date === dateStr).reduce((sum, r) => sum + r.amount, 0);
+          periodOut = records.out.filter(r => r.date === dateStr).reduce((sum, r) => sum + r.amount, 0);
+        } else if (groupBy === 'week') {
+          const startStr = period.startDate.toISOString().split('T')[0];
+          const endStr = period.endDate.toISOString().split('T')[0];
+          periodIn = records.in.filter(r => r.date >= startStr && r.date <= endStr).reduce((sum, r) => sum + r.amount, 0);
+          periodOut = records.out.filter(r => r.date >= startStr && r.date <= endStr).reduce((sum, r) => sum + r.amount, 0);
+        } else if (groupBy === 'month') {
+          periodIn = records.in.filter(r => {
+            if (!r.date) return false;
+            const d = new Date(r.date);
+            return d.getMonth() === period.month && d.getFullYear() === period.year;
+          }).reduce((sum, r) => sum + r.amount, 0);
+          periodOut = records.out.filter(r => {
+            if (!r.date) return false;
+            const d = new Date(r.date);
+            return d.getMonth() === period.month && d.getFullYear() === period.year;
+          }).reduce((sum, r) => sum + r.amount, 0);
+        }
+        
+        inData.push(periodIn);
+        outData.push(periodOut);
+      });
+      
+      // Update Cash Flow Chart
+      cashFlowChart.data.labels = chartLabels;
+      cashFlowChart.data.datasets[0].data = inData;
+      cashFlowChart.data.datasets[1].data = outData;
+      cashFlowChart.update();
+      
+      // Update Comparison Chart
+      comparisonChart.data.labels = chartLabels;
+      comparisonChart.data.datasets[0].data = inData;
+      comparisonChart.data.datasets[1].data = outData;
+      comparisonChart.update();
+      
+      // Update Category Pie Chart (for the entire period)
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+      
+      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0 };
+      records.out.filter(r => r.date >= startStr && r.date <= endStr).forEach(r => {
+        if (categoryTotals.hasOwnProperty(r.category)) {
+          categoryTotals[r.category] += r.amount;
+        }
+      });
+      
+      categoryChart.data.datasets[0].data = [
+        categoryTotals['Cashout'],
+        categoryTotals['Expenses'],
+        categoryTotals['Savings']
+      ];
+      categoryChart.update();
+    }
+
+    // Search and Filter Functions
+    function filterRecords() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      const dateFilter = document.getElementById('dateFilter').value;
+      const categoryFilter = document.getElementById('categoryFilter').value;
+      const shiftFilter = document.getElementById('shiftFilter').value;
+      
+      // Show/hide clear button
+      document.getElementById('clearSearch').style.display = searchTerm ? 'flex' : 'none';
+      
+      // Update filter active states
+      document.getElementById('dateFilter').classList.toggle('filter-active', dateFilter !== 'all');
+      document.getElementById('categoryFilter').classList.toggle('filter-active', categoryFilter !== 'all');
+      document.getElementById('shiftFilter').classList.toggle('filter-active', shiftFilter !== 'all');
+      
+      // Get date range
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+      
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      // Filter function
+      const filterFn = (record) => {
+        // Search filter
+        if (searchTerm) {
+          const searchMatch = 
+            (record.remarks && record.remarks.toLowerCase().includes(searchTerm)) ||
+            (record.category && record.category.toLowerCase().includes(searchTerm)) ||
+            (record.amount && record.amount.toString().includes(searchTerm)) ||
+            (record.shift && record.shift.toLowerCase().includes(searchTerm));
+          if (!searchMatch) return false;
+        }
+        
+        // Date filter
+        if (dateFilter !== 'all' && record.date) {
+          const recordDate = new Date(record.date);
+          recordDate.setHours(0, 0, 0, 0);
+          
+          switch (dateFilter) {
+            case 'today':
+              if (record.date !== todayStr) return false;
+              break;
+            case 'yesterday':
+              if (record.date !== yesterdayStr) return false;
+              break;
+            case 'week':
+              if (recordDate < weekAgo) return false;
+              break;
+            case 'month':
+              if (recordDate < monthStart) return false;
+              break;
+          }
+        }
+        
+        // Category filter
+        if (categoryFilter !== 'all') {
+          if (record.category !== categoryFilter) return false;
+        }
+        
+        // Shift filter
+        if (shiftFilter !== 'all') {
+          if (record.shift !== shiftFilter) return false;
+        }
+        
+        return true;
+      };
+      
+      // Apply filters
+      filteredRecords.in = records.in.filter(filterFn);
+      filteredRecords.out = records.out.filter(filterFn);
+      
+      // Update table
+      updateTableWithFiltered();
+    }
+    
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('dateFilter').value = 'all';
+      document.getElementById('categoryFilter').value = 'all';
+      document.getElementById('shiftFilter').value = 'all';
+      filterRecords();
+    }
+    
+    function updateTableWithFiltered() {
+      const tbody = document.getElementById('tableBody');
+      const data = filteredRecords[currentTab];
+      const allData = records[currentTab];
+      const countEl = document.getElementById('recordCount');
+      
+      // Check if filters are active
+      const isFiltered = data.length !== allData.length;
+      
+      countEl.textContent = isFiltered 
+        ? `${data.length} of ${allData.length} records`
+        : `${data.length} record${data.length !== 1 ? 's' : ''}`;
+      
+      if (data.length === 0) {
+        const hasRecords = allData.length > 0;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <div class="icon">${hasRecords ? '🔍' : '📋'}</div>
+                <p>${hasRecords ? 'No records match your search/filters' : 'No records yet. Add your first entry!'}</p>
+                ${hasRecords ? '<button onclick="clearSearch()" style="margin-top:12px; padding:8px 16px; background:var(--accent-blue); border:none; border-radius:8px; color:white; cursor:pointer;">Clear Filters</button>' : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = data.map(record => {
+        let receiptHtml = '<span class="no-receipt">—</span>';
+        
+        if (record.receipt) {
+          if (record.receipt.startsWith('data:image')) {
+            receiptHtml = `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">`;
+          } else if (record.receipt.includes('drive.google.com') || record.receipt.startsWith('https://')) {
+            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link">📷 View</a>`;
+          }
+        } else if (record.receiptUrl) {
+          receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
+        }
+        
+        const displayDate = formatDate(record.date);
+        const displayTime = formatTime(record.time);
+        
+        return `
+          <tr>
+            <td class="date-cell">
+              ${displayDate}<br>
+              <span style="color: var(--text-muted)">${displayTime}</span>
+            </td>
+            <td>
+              <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift || '-'}</span>
+            </td>
+            <td>
+              <span class="category-badge ${getCategoryClass(record.category)}">${record.category || '-'}</span>
+            </td>
+            <td class="remarks-cell" title="${record.remarks}">${record.remarks || '-'}</td>
+            <td class="amount-cell ${currentTab}">${formatCurrency(record.amount)}</td>
+            <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
+            <td>${receiptHtml}</td>
+            <td>
+              <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     function installPWA() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
@@ -1439,13 +2729,30 @@
       const formTitle = document.getElementById('formTitle');
       const submitBtn = document.getElementById('submitBtn');
       const categorySelect = document.getElementById('entryCategory');
+      const categoryFilter = document.getElementById('categoryFilter');
       
-      // Update category options
+      // Update category options for form
       categorySelect.innerHTML = '<option value="">Select Category</option>';
       categories[tab].forEach(cat => {
         const icon = getCategoryIcon(cat);
         categorySelect.innerHTML += `<option value="${cat}">${icon} ${cat}</option>`;
       });
+      
+      // Update category filter options
+      if (tab === 'in') {
+        categoryFilter.innerHTML = `
+          <option value="all">📁 All Categories</option>
+          <option value="Remittance">Remittance</option>
+          <option value="Additional Funds">Additional Funds</option>
+        `;
+      } else {
+        categoryFilter.innerHTML = `
+          <option value="all">📁 All Categories</option>
+          <option value="Cashout">Cashout</option>
+          <option value="Expenses">Expenses</option>
+          <option value="Savings">Savings</option>
+        `;
+      }
       
       if (tab === 'in') {
         formPanel.classList.remove('out-mode');
@@ -1463,7 +2770,8 @@
         document.getElementById('tableTitle').textContent = 'Fund Out Records';
       }
       
-      updateTable();
+      // Apply filters to new tab
+      filterRecords();
     }
 
     function getCategoryIcon(cat) {
@@ -1799,7 +3107,17 @@
         return idB - idA;
       });
       
-      updateTable();
+      // Initialize filtered records
+      filteredRecords.in = [...records.in];
+      filteredRecords.out = [...records.out];
+      
+      // Apply current filters
+      filterRecords();
+      
+      // Update charts if visible
+      if (dashboardVisible) {
+        updateDashboard();
+      }
     }
 
     function updateSummary() {
