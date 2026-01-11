@@ -1252,7 +1252,7 @@
           records.in = inData.records.map(r => ({
             id: r.row_id || String(Date.now() + Math.random()),
             date: formatDateFromSheet(r.date),
-            time: r.time || '',
+            time: formatTimeFromSheet(r.time),
             shift: r.shift || '',
             category: r.category || '',
             remarks: r.remarks || '',
@@ -1260,15 +1260,16 @@
             fee: parseFloat(r.bank_fee) || 0,
             receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
-            type: 'in'
-          })).filter(r => r.date); // Filter out empty rows
+            type: 'in',
+            rowNumber: r.row_number || 0
+          })).filter(r => r.date);
         }
         
         if (outData.success && outData.records) {
           records.out = outData.records.map(r => ({
             id: r.row_id || String(Date.now() + Math.random()),
             date: formatDateFromSheet(r.date),
-            time: r.time || '',
+            time: formatTimeFromSheet(r.time),
             shift: r.shift || '',
             category: r.category || '',
             remarks: r.remarks || '',
@@ -1276,15 +1277,13 @@
             fee: parseFloat(r.bank_fee) || 0,
             receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
-            type: 'out'
+            type: 'out',
+            rowNumber: r.row_number || 0
           })).filter(r => r.date);
         }
         
-        // Sort by date descending (newest first)
-        records.in.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
-        records.out.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
-        
-        // Save to localStorage for offline access
+        // Records already come sorted from Google Sheets (newest first)
+        // Just save to localStorage for offline access
         saveToStorage();
         updateUI();
         
@@ -1309,14 +1308,25 @@
       if (!dateValue) return '';
       
       // If it's already a string in YYYY-MM-DD format
-      if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}/)) {
-        return dateValue.substring(0, 10);
+      if (typeof dateValue === 'string') {
+        // Check if it's a proper date format
+        if (dateValue.match(/^\d{4}-\d{2}-\d{2}/)) {
+          return dateValue.substring(0, 10);
+        }
+        // Try parsing as date
+        try {
+          const date = new Date(dateValue);
+          if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+            return date.toISOString().split('T')[0];
+          }
+        } catch (e) {}
+        return dateValue;
       }
       
-      // If it's a Date object or date string
+      // If it's a Date object
       try {
         const date = new Date(dateValue);
-        if (!isNaN(date.getTime())) {
+        if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
           return date.toISOString().split('T')[0];
         }
       } catch (e) {
@@ -1324,6 +1334,38 @@
       }
       
       return String(dateValue);
+    }
+    
+    // Format time from Google Sheets
+    function formatTimeFromSheet(timeValue) {
+      if (!timeValue) return '';
+      
+      // If it's a string, extract time part
+      if (typeof timeValue === 'string') {
+        // Check for time in HH:MM format
+        const timeMatch = timeValue.match(/(\d{1,2}):(\d{2})/);
+        if (timeMatch) {
+          return timeMatch[0];
+        }
+        // Check for ISO format with T
+        if (timeValue.includes('T')) {
+          const timePart = timeValue.split('T')[1];
+          if (timePart) {
+            return timePart.substring(0, 5);
+          }
+        }
+        return timeValue;
+      }
+      
+      // If it's a Date object (Google Sheets sometimes sends time as date)
+      try {
+        const date = new Date(timeValue);
+        if (!isNaN(date.getTime())) {
+          return date.toTimeString().substring(0, 5);
+        }
+      } catch (e) {}
+      
+      return String(timeValue);
     }
 
     // PWA Install
@@ -1742,6 +1784,21 @@
     // UI Updates
     function updateUI() {
       updateSummary();
+      
+      // Sort records - newest first (by ID which is timestamp-based)
+      // Higher ID = more recent
+      records.in.sort((a, b) => {
+        const idA = parseInt(a.id) || 0;
+        const idB = parseInt(b.id) || 0;
+        return idB - idA;
+      });
+      
+      records.out.sort((a, b) => {
+        const idA = parseInt(a.id) || 0;
+        const idB = parseInt(b.id) || 0;
+        return idB - idA;
+      });
+      
       updateTable();
     }
 
@@ -1796,11 +1853,15 @@
           receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
         }
         
+        // Format date and time for display
+        const displayDate = formatDate(record.date);
+        const displayTime = formatTime(record.time);
+        
         return `
           <tr>
             <td class="date-cell">
-              ${formatDate(record.date)}<br>
-              ${record.time}
+              ${displayDate}<br>
+              <span style="color: var(--text-muted)">${displayTime}</span>
             </td>
             <td>
               <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift || '-'}</span>
@@ -1845,8 +1906,36 @@
     }
 
     function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+      if (!dateStr) return '-';
+      
+      try {
+        // Handle YYYY-MM-DD format
+        if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+          const [year, month, day] = dateStr.split('-');
+          const date = new Date(year, month - 1, day);
+          return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+          return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      } catch (e) {
+        console.log('formatDate error:', e);
+      }
+      
+      return dateStr || '-';
+    }
+    
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+      
+      // If already in HH:MM format
+      if (typeof timeStr === 'string' && timeStr.match(/^\d{1,2}:\d{2}/)) {
+        return timeStr.substring(0, 5);
+      }
+      
+      return timeStr;
     }
 
     function getShiftClass(shift) {
