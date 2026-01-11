@@ -1397,16 +1397,27 @@
       
       const record = records[currentTab].find(r => r.id === deleteTargetId);
       
+      if (!record) {
+        closeDeleteModal();
+        showToast('Record not found', 'error');
+        return;
+      }
+      
+      // Make sure record has the type
+      record.type = currentTab;
+      
       // Send delete to Google Sheets first
-      if (googleSheetsUrl && record) {
+      if (googleSheetsUrl) {
+        showToast('Deleting from Google Sheets...', 'warning');
         await sendToGoogleSheets('DELETE', record);
       }
       
+      // Remove from local records
       records[currentTab] = records[currentTab].filter(r => r.id !== deleteTargetId);
       saveToStorage();
       updateUI();
       closeDeleteModal();
-      showToast('Record deleted and logged', 'warning');
+      showToast('Record deleted and logged', 'success');
     }
 
     // UI Updates
@@ -1565,37 +1576,42 @@
       
       const dot = document.getElementById('statusDot');
       dot.className = 'status-dot syncing';
+      document.getElementById('statusText').textContent = 'Syncing...';
       
       try {
-        // For base64 images, we'll send a compressed version or just indicate there's an image
         const payload = {
           action: action,
-          type: entry.type.toUpperCase(),
-          rowId: entry.id,
-          date: entry.date,
-          time: entry.time,
-          shift: entry.shift,
-          category: entry.category,
-          remarks: entry.remarks,
-          amount: entry.amount,
-          fee: entry.fee,
+          type: (entry.type || currentTab).toUpperCase(),
+          rowId: String(entry.id),
+          date: entry.date || '',
+          time: entry.time || '',
+          shift: entry.shift || '',
+          category: entry.category || '',
+          remarks: entry.remarks || '',
+          amount: entry.amount || 0,
+          fee: entry.fee || 0,
           hasReceipt: !!entry.receipt,
-          // Store receipt separately or use Google Drive
-          receiptData: entry.receipt ? entry.receipt.substring(0, 100) + '...[truncated]' : null,
+          receiptBase64: entry.receipt || null,  // Send full base64 for Drive upload
           timestamp: new Date().toISOString()
         };
         
+        console.log('Sending to Google Sheets:', action);
+        
+        // Use text/plain to avoid CORS preflight
         await fetch(googleSheetsUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(payload)
         });
         
         dot.className = 'status-dot';
+        document.getElementById('statusText').textContent = 'Connected';
+        console.log('Sync completed for:', action);
       } catch (err) {
         dot.className = 'status-dot offline';
-        console.log('Sync attempted:', err);
+        document.getElementById('statusText').textContent = 'Sync Error';
+        console.error('Sync error:', err);
       }
     }
 
