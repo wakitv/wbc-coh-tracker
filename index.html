@@ -620,6 +620,23 @@
       font-size: 11px;
     }
 
+    .receipt-link {
+      display: inline-block;
+      padding: 4px 8px;
+      background: var(--accent-in-dim);
+      color: var(--accent-in);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .receipt-link:hover {
+      background: var(--accent-in);
+      color: var(--bg-primary);
+    }
+
     .delete-btn {
       width: 32px;
       height: 32px;
@@ -934,8 +951,11 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="setup-btn" onclick="syncFromGoogleSheets()" style="background: var(--accent-blue);" id="syncBtn">
+          🔄 Sync
+        </button>
         <button class="setup-btn" onclick="showGoogleSheetsModal()">
-          📊 Google Sheets
+          📊 Settings
         </button>
         <div class="connection-status" id="connectionStatus">
           <div class="status-dot" id="statusDot"></div>
@@ -1110,8 +1130,15 @@
       </div>
       
       <p class="modal-text">
-        Para i-connect sa Google Sheets at ma-sync ang data mo online:
+        Para i-connect sa Google Sheets at ma-sync ang data mo across ALL devices (laptop, phone, tablet):
       </p>
+
+      <div style="background: var(--accent-in-dim); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+        <strong style="color: var(--accent-in);">💡 Cross-Device Sync</strong>
+        <p style="font-size: 12px; margin-top: 6px; color: var(--text-secondary);">
+          Once connected, your records will sync across all devices. Just enter the same Google Sheets URL on each device!
+        </p>
+      </div>
 
       <h4 style="margin-bottom: 10px; color: var(--accent-in); font-size: 14px;">Step 1: Create Google Sheet</h4>
       <p class="modal-text">
@@ -1189,17 +1216,137 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
-      loadFromStorage();
+      loadFromStorage();  // Load local first (for offline support)
       setDefaultDateTime();
       updateUI();
       updateConnectionStatus();
+      
+      // Then sync from Google Sheets if connected
+      if (googleSheetsUrl) {
+        syncFromGoogleSheets();
+      }
     });
+
+    // Sync records FROM Google Sheets (for cross-device sync)
+    async function syncFromGoogleSheets() {
+      if (!googleSheetsUrl) return;
+      
+      const dot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      
+      dot.className = 'status-dot syncing';
+      statusText.textContent = 'Syncing...';
+      
+      try {
+        // Fetch IN records
+        const inResponse = await fetch(`${googleSheetsUrl}?action=GET&type=IN`);
+        const inData = await inResponse.json();
+        
+        // Fetch OUT records
+        const outResponse = await fetch(`${googleSheetsUrl}?action=GET&type=OUT`);
+        const outData = await outResponse.json();
+        
+        console.log('Fetched from Google Sheets - IN:', inData, 'OUT:', outData);
+        
+        if (inData.success && inData.records) {
+          records.in = inData.records.map(r => ({
+            id: r.row_id || String(Date.now() + Math.random()),
+            date: formatDateFromSheet(r.date),
+            time: r.time || '',
+            shift: r.shift || '',
+            category: r.category || '',
+            remarks: r.remarks || '',
+            amount: parseFloat(r.amount) || 0,
+            fee: parseFloat(r.bank_fee) || 0,
+            receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
+            receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
+            type: 'in'
+          })).filter(r => r.date); // Filter out empty rows
+        }
+        
+        if (outData.success && outData.records) {
+          records.out = outData.records.map(r => ({
+            id: r.row_id || String(Date.now() + Math.random()),
+            date: formatDateFromSheet(r.date),
+            time: r.time || '',
+            shift: r.shift || '',
+            category: r.category || '',
+            remarks: r.remarks || '',
+            amount: parseFloat(r.amount) || 0,
+            fee: parseFloat(r.bank_fee) || 0,
+            receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
+            receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
+            type: 'out'
+          })).filter(r => r.date);
+        }
+        
+        // Sort by date descending (newest first)
+        records.in.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+        records.out.sort((a, b) => new Date(b.date + ' ' + b.time) - new Date(a.date + ' ' + a.time));
+        
+        // Save to localStorage for offline access
+        saveToStorage();
+        updateUI();
+        
+        dot.className = 'status-dot';
+        statusText.textContent = 'Synced ✓';
+        
+        const totalRecords = records.in.length + records.out.length;
+        showToast(`Synced ${totalRecords} records from Google Sheets`, 'success');
+        
+        console.log('Sync complete - IN:', records.in.length, 'OUT:', records.out.length);
+        
+      } catch (err) {
+        console.error('Sync error:', err);
+        dot.className = 'status-dot offline';
+        statusText.textContent = 'Sync Failed';
+        showToast('Could not sync from Google Sheets. Using local data.', 'warning');
+      }
+    }
+    
+    // Format date from Google Sheets (handles various formats)
+    function formatDateFromSheet(dateValue) {
+      if (!dateValue) return '';
+      
+      // If it's already a string in YYYY-MM-DD format
+      if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return dateValue.substring(0, 10);
+      }
+      
+      // If it's a Date object or date string
+      try {
+        const date = new Date(dateValue);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+      } catch (e) {
+        console.log('Date parse error:', e);
+      }
+      
+      return String(dateValue);
+    }
 
     // PWA Install
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       document.getElementById('installBanner').classList.add('show');
+    });
+
+    // Auto-sync when page becomes visible (switching back to app)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && googleSheetsUrl) {
+        console.log('Page visible, syncing...');
+        syncFromGoogleSheets();
+      }
+    });
+
+    // Also sync when coming back online
+    window.addEventListener('online', () => {
+      if (googleSheetsUrl) {
+        showToast('Back online! Syncing...', 'success');
+        syncFromGoogleSheets();
+      }
     });
 
     function installPWA() {
@@ -1322,6 +1469,40 @@
       document.getElementById('photoUploadArea').classList.add('has-photo');
     }
 
+    // Compress image to reduce file size for upload
+    function compressImage(base64, maxWidth = 800, quality = 0.7) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Calculate new dimensions
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to compressed JPEG
+          const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+          console.log('Image compressed:', Math.round(base64.length / 1024) + 'KB ->', Math.round(compressedBase64.length / 1024) + 'KB');
+          resolve(compressedBase64);
+        };
+        img.onerror = function() {
+          console.log('Image compression failed, using original');
+          resolve(base64);
+        };
+        img.src = base64;
+      });
+    }
+
     function removePhoto() {
       currentPhotoBase64 = null;
       document.getElementById('photoPlaceholder').style.display = 'block';
@@ -1383,7 +1564,7 @@
 
     // Delete
     function promptDelete(id) {
-      deleteTargetId = id;
+      deleteTargetId = String(id);
       document.getElementById('deleteModal').classList.add('active');
     }
 
@@ -1395,7 +1576,7 @@
     async function confirmDelete() {
       if (!deleteTargetId) return;
       
-      const record = records[currentTab].find(r => r.id === deleteTargetId);
+      const record = records[currentTab].find(r => String(r.id) === String(deleteTargetId));
       
       if (!record) {
         closeDeleteModal();
@@ -1413,7 +1594,7 @@
       }
       
       // Remove from local records
-      records[currentTab] = records[currentTab].filter(r => r.id !== deleteTargetId);
+      records[currentTab] = records[currentTab].filter(r => String(r.id) !== String(deleteTargetId));
       saveToStorage();
       updateUI();
       closeDeleteModal();
@@ -1460,38 +1641,60 @@
         return;
       }
       
-      tbody.innerHTML = data.map(record => `
-        <tr>
-          <td class="date-cell">
-            ${formatDate(record.date)}<br>
-            ${record.time}
-          </td>
-          <td>
-            <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift}</span>
-          </td>
-          <td>
-            <span class="category-badge ${getCategoryClass(record.category)}">${record.category}</span>
-          </td>
-          <td class="remarks-cell" title="${record.remarks}">${record.remarks}</td>
-          <td class="amount-cell ${currentTab}">${formatCurrency(record.amount)}</td>
-          <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
-          <td>
-            ${record.receipt ? 
-              `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">` : 
-              '<span class="no-receipt">—</span>'}
-          </td>
-          <td>
-            <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = data.map(record => {
+        // Handle receipt - could be base64 (local) or URL (from Google Sheets)
+        let receiptHtml = '<span class="no-receipt">—</span>';
+        
+        if (record.receipt) {
+          if (record.receipt.startsWith('data:image')) {
+            // Local base64 image
+            receiptHtml = `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">`;
+          } else if (record.receipt.includes('drive.google.com') || record.receipt.startsWith('https://')) {
+            // Google Drive URL
+            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link">📷 View</a>`;
+          }
+        } else if (record.receiptUrl) {
+          // Fallback to receiptUrl field
+          receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
+        }
+        
+        return `
+          <tr>
+            <td class="date-cell">
+              ${formatDate(record.date)}<br>
+              ${record.time}
+            </td>
+            <td>
+              <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift || '-'}</span>
+            </td>
+            <td>
+              <span class="category-badge ${getCategoryClass(record.category)}">${record.category || '-'}</span>
+            </td>
+            <td class="remarks-cell" title="${record.remarks}">${record.remarks || '-'}</td>
+            <td class="amount-cell ${currentTab}">${formatCurrency(record.amount)}</td>
+            <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
+            <td>${receiptHtml}</td>
+            <td>
+              <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function showReceiptImage(id) {
-      const record = records[currentTab].find(r => r.id === id);
-      if (record && record.receipt) {
-        document.getElementById('modalImage').src = record.receipt;
-        document.getElementById('imageModal').classList.add('active');
+      const record = records[currentTab].find(r => String(r.id) === String(id));
+      if (record) {
+        if (record.receipt && record.receipt.startsWith('data:image')) {
+          // Base64 image - show in modal
+          document.getElementById('modalImage').src = record.receipt;
+          document.getElementById('imageModal').classList.add('active');
+        } else if (record.receipt && record.receipt.includes('drive.google.com')) {
+          // Google Drive URL - open in new tab
+          window.open(record.receipt, '_blank');
+        } else if (record.receiptUrl) {
+          window.open(record.receiptUrl, '_blank');
+        }
       }
     }
 
@@ -1552,7 +1755,14 @@
       localStorage.setItem('googleSheetsUrl', googleSheetsUrl);
       updateConnectionStatus();
       closeGoogleSheetsModal();
-      showToast('Google Sheets connected!', 'success');
+      showToast('Google Sheets URL saved!', 'success');
+      
+      // Sync immediately after connecting
+      if (googleSheetsUrl) {
+        setTimeout(() => {
+          syncFromGoogleSheets();
+        }, 500);
+      }
     }
 
     async function testConnection() {
@@ -1579,6 +1789,14 @@
       document.getElementById('statusText').textContent = 'Syncing...';
       
       try {
+        // Compress receipt image if exists
+        let compressedReceipt = null;
+        if (entry.receipt && entry.receipt.length > 100) {
+          document.getElementById('statusText').textContent = 'Compressing image...';
+          compressedReceipt = await compressImage(entry.receipt, 800, 0.6);
+          console.log('Receipt ready for upload, size:', Math.round(compressedReceipt.length / 1024) + 'KB');
+        }
+        
         const payload = {
           action: action,
           type: (entry.type || currentTab).toUpperCase(),
@@ -1590,18 +1808,21 @@
           remarks: entry.remarks || '',
           amount: entry.amount || 0,
           fee: entry.fee || 0,
-          hasReceipt: !!entry.receipt,
-          receiptBase64: entry.receipt || null,  // Send full base64 for Drive upload
+          hasReceipt: !!compressedReceipt,
+          receiptBase64: compressedReceipt,
           timestamp: new Date().toISOString()
         };
         
-        console.log('Sending to Google Sheets:', action);
+        document.getElementById('statusText').textContent = 'Uploading...';
+        console.log('Sending to Google Sheets:', action, 'Receipt size:', compressedReceipt ? Math.round(compressedReceipt.length / 1024) + 'KB' : 'none');
         
-        // Use text/plain to avoid CORS preflight
-        await fetch(googleSheetsUrl, {
+        // Send request
+        const response = await fetch(googleSheetsUrl, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain' },
+          redirect: 'follow',
+          headers: { 
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
           body: JSON.stringify(payload)
         });
         
