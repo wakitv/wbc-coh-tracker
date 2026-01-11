@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>EXTREME WBC - Cash on Hand Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #12121a;
+      --bg-card: #1a1a24;
+      --bg-elevated: #22222e;
+      --accent-in: #00d4aa;
+      --accent-in-dim: rgba(0, 212, 170, 0.15);
+      --accent-out: #ff6b6b;
+      --accent-out-dim: rgba(255, 107, 107, 0.15);
+      --accent-blue: #4d9fff;
+      --accent-yellow: #ffd93d;
+      --accent-purple: #9d4edd;
+      --text-primary: #ffffff;
+      --text-secondary: #8b8b9e;
+      --text-muted: #5a5a6e;
+      --border: #2a2a3a;
+      --gradient-in: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+      --gradient-out: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(0, 212, 170, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(255, 107, 107, 0.06) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--gradient-in);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--bg-primary);
+    }
+
+    .logo h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      color: var(--text-secondary);
+      font-weight: 400;
+      font-size: 12px;
+      display: block;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-in);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.offline { background: var(--accent-out); }
+    .status-dot.syncing { background: var(--accent-yellow); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Summary Cards */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+    }
+
+    .summary-card.coh::before { background: var(--accent-blue); }
+    .summary-card.in::before { background: var(--gradient-in); }
+    .summary-card.out::before { background: var(--gradient-out); }
+    .summary-card.fee::before { background: linear-gradient(135deg, #ffd93d 0%, #ff9f1a 100%); }
+
+    .summary-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .summary-card.coh .summary-value { color: var(--accent-blue); }
+    .summary-card.in .summary-value { color: var(--accent-in); }
+    .summary-card.out .summary-value { color: var(--accent-out); }
+    .summary-card.fee .summary-value { color: #ffd93d; }
+
+    /* Tabs */
+    .tabs-wrapper {
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 4px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active.in-tab {
+      background: var(--accent-in-dim);
+      color: var(--accent-in);
+    }
+
+    .tab-btn.active.out-tab {
+      background: var(--accent-out-dim);
+      color: var(--accent-out);
+    }
+
+    /* Main Content Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+
+    /* Form Panel */
+    .form-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      height: fit-content;
+    }
+
+    .form-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-title .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .form-title.in .icon { background: var(--accent-in-dim); }
+    .form-title.out .icon { background: var(--accent-out-dim); }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    label .required {
+      color: var(--accent-out);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent-in);
+      box-shadow: 0 0 0 3px var(--accent-in-dim);
+    }
+
+    .out-mode input:focus, .out-mode select:focus, .out-mode textarea:focus {
+      border-color: var(--accent-out);
+      box-shadow: 0 0 0 3px var(--accent-out-dim);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .amount-input {
+      position: relative;
+    }
+
+    .amount-input::before {
+      content: '₱';
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .amount-input input {
+      padding-left: 32px;
+      font-family: 'Space Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* Photo Upload */
+    .photo-upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg-elevated);
+    }
+
+    .photo-upload-area:hover {
+      border-color: var(--accent-in);
+      background: var(--accent-in-dim);
+    }
+
+    .out-mode .photo-upload-area:hover {
+      border-color: var(--accent-out);
+      background: var(--accent-out-dim);
+    }
+
+    .photo-upload-area.has-photo {
+      padding: 8px;
+      border-style: solid;
+    }
+
+    .photo-upload-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .photo-upload-text {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .photo-upload-text strong {
+      color: var(--text-primary);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .photo-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .photo-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .photo-btn:hover {
+      background: var(--bg-elevated);
+    }
+
+    .photo-preview {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .photo-preview-container {
+      position: relative;
+    }
+
+    .remove-photo {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-out);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .submit-btn.in-btn {
+      background: var(--gradient-in);
+      color: var(--bg-primary);
+    }
+
+    .submit-btn.out-btn {
+      background: var(--gradient-out);
+      color: white;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Data Table */
+    .table-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .table-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .record-count {
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--bg-elevated);
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: var(--bg-elevated);
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: var(--bg-elevated);
+    }
+
+    .date-cell {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .shift-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .shift-morning { background: rgba(255, 217, 61, 0.15); color: #ffd93d; }
+    .shift-afternoon { background: rgba(77, 159, 255, 0.15); color: #4d9fff; }
+    .shift-night { background: rgba(157, 78, 221, 0.15); color: #9d4edd; }
+
+    .category-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .cat-remittance { background: rgba(0, 212, 170, 0.15); color: var(--accent-in); }
+    .cat-additional { background: rgba(77, 159, 255, 0.15); color: var(--accent-blue); }
+    .cat-cashout { background: rgba(255, 107, 107, 0.15); color: var(--accent-out); }
+    .cat-expenses { background: rgba(255, 159, 26, 0.15); color: #ff9f1a; }
+    .cat-savings { background: rgba(157, 78, 221, 0.15); color: var(--accent-purple); }
+
+    .amount-cell {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .amount-cell.in { color: var(--accent-in); }
+    .amount-cell.out { color: var(--accent-out); }
+
+    .remarks-cell {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .receipt-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+
+    .receipt-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    .no-receipt {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .delete-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .delete-btn:hover {
+      background: var(--accent-out-dim);
+      color: var(--accent-out);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      transform: scale(0.95);
+      transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-title .icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-text {
+      color: var(--text-secondary);
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .code-block {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    .code-block code {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--accent-in);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .modal-close {
+      padding: 10px 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .setup-btn {
+      padding: 8px 14px;
+      background: linear-gradient(135deg, #34a853 0%, #1e8e3e 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    /* Image Preview Modal */
+    .image-modal .modal {
+      max-width: 90vw;
+      max-height: 90vh;
+      padding: 12px;
+      background: var(--bg-primary);
+    }
+
+    .image-modal .modal img {
+      width: 100%;
+      height: auto;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 14px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1001;
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-left: 4px solid var(--accent-in); }
+    .toast.error { border-left: 4px solid var(--accent-out); }
+    .toast.warning { border-left: 4px solid var(--accent-yellow); }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Hidden file input */
+    .hidden-input {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 12px;
+      }
+
+      header {
+        justify-content: center;
+        text-align: center;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      .summary-card {
+        padding: 12px;
+      }
+
+      .summary-value {
+        font-size: 15px;
+      }
+
+      .tabs {
+        max-width: 100%;
+      }
+
+      .form-panel {
+        padding: 16px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .table-wrapper {
+        max-height: 400px;
+      }
+
+      td, th {
+        padding: 10px 8px;
+        font-size: 11px;
+      }
+    }
+
+    /* PWA Install Banner */
+    .install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 999;
+    }
+
+    .install-banner.show {
+      display: flex;
+    }
+
+    .install-banner p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .install-btn {
+      padding: 10px 20px;
+      background: var(--gradient-in);
+      border: none;
+      border-radius: 8px;
+      color: var(--bg-primary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">₱</div>
+        <div>
+          <h1>EXTREME WBC</h1>
+          <span>Cash on Hand Tracker 2026</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="setup-btn" onclick="showGoogleSheetsModal()">
+          📊 Google Sheets
+        </button>
+        <div class="connection-status" id="connectionStatus">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Offline Mode</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid">
+      <div class="summary-card coh">
+        <div class="summary-label">Cash on Hand</div>
+        <div class="summary-value" id="totalCOH">₱0.00</div>
+      </div>
+      <div class="summary-card in">
+        <div class="summary-label">Total Fund In</div>
+        <div class="summary-value" id="totalIn">₱0.00</div>
+      </div>
+      <div class="summary-card out">
+        <div class="summary-label">Total Fund Out</div>
+        <div class="summary-value" id="totalOut">₱0.00</div>
+      </div>
+      <div class="summary-card fee">
+        <div class="summary-label">Total Fees</div>
+        <div class="summary-value" id="totalFees">₱0.00</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-wrapper">
+      <div class="tabs">
+        <button class="tab-btn in-tab active" onclick="switchTab('in')">💰 Fund In</button>
+        <button class="tab-btn out-tab" onclick="switchTab('out')">💸 Fund Out</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-grid">
+      <!-- Form Panel -->
+      <div class="form-panel" id="formPanel">
+        <div class="form-title in" id="formTitle">
+          <div class="icon">💰</div>
+          <span>New Fund In Entry</span>
+        </div>
+
+        <form id="entryForm" onsubmit="handleSubmit(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Date <span class="required">*</span></label>
+              <input type="date" id="entryDate" required>
+            </div>
+            <div class="form-group">
+              <label>Time <span class="required">*</span></label>
+              <input type="time" id="entryTime" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Shift <span class="required">*</span></label>
+            <select id="entryShift" required>
+              <option value="">Select Shift</option>
+              <option value="4AM-12NN">🌅 4AM - 12NN (Morning)</option>
+              <option value="12NN-8PM">☀️ 12NN - 8PM (Afternoon)</option>
+              <option value="8PM-4AM">🌙 8PM - 4AM (Night)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="categoryGroup">
+            <label>Category <span class="required">*</span></label>
+            <select id="entryCategory" required>
+              <option value="">Select Category</option>
+              <option value="Remittance">💸 Remittance</option>
+              <option value="Additional Funds">💰 Additional Funds</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Remarks / Description <span class="required">*</span></label>
+            <textarea id="entryRemarks" placeholder="e.g., MRN BPI, DWYN GCASH..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Amount <span class="required">*</span></label>
+              <div class="amount-input">
+                <input type="number" id="entryAmount" step="0.01" min="0" placeholder="0.00" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Bank Fee</label>
+              <div class="amount-input">
+                <input type="number" id="entryFee" step="0.01" min="0" placeholder="0.00" value="0">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Receipt Photo <span class="required">*</span></label>
+            <div class="photo-upload-area" id="photoUploadArea" onclick="triggerPhotoUpload()">
+              <div id="photoPlaceholder">
+                <div class="photo-upload-icon">📷</div>
+                <div class="photo-upload-text">
+                  <strong>Upload or Take Photo</strong>
+                  Tap to capture or select receipt image
+                </div>
+                <div class="photo-buttons">
+                  <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
+                    📸 Camera
+                  </button>
+                  <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
+                    🖼️ Gallery
+                  </button>
+                </div>
+              </div>
+              <div id="photoPreviewContainer" class="photo-preview-container" style="display: none;">
+                <img id="photoPreview" class="photo-preview" src="" alt="Receipt preview">
+                <button type="button" class="remove-photo" onclick="event.stopPropagation(); removePhoto()">✕</button>
+              </div>
+            </div>
+            <input type="file" id="cameraInput" class="hidden-input" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)">
+            <input type="file" id="galleryInput" class="hidden-input" accept="image/*" onchange="handlePhotoSelect(event)">
+          </div>
+
+          <button type="submit" class="submit-btn in-btn" id="submitBtn">
+            <span>➕</span> Add Fund In Entry
+          </button>
+        </form>
+      </div>
+
+      <!-- Table Panel -->
+      <div class="table-panel">
+        <div class="table-header">
+          <div class="table-title" id="tableTitle">Fund In Records</div>
+          <div class="record-count" id="recordCount">0 records</div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Shift</th>
+                <th>Category</th>
+                <th>Remarks</th>
+                <th>Amount</th>
+                <th>Fee</th>
+                <th>Receipt</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr>
+                <td colspan="8">
+                  <div class="empty-state">
+                    <div class="icon">📋</div>
+                    <p>No records yet. Add your first entry!</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sheets Modal -->
+  <div class="modal-overlay" id="gsModal">
+    <div class="modal">
+      <div class="modal-title">
+        <div class="icon">📊</div>
+        <span>Google Sheets Setup</span>
+      </div>
+      
+      <p class="modal-text">
+        Para i-connect sa Google Sheets at ma-sync ang data mo online:
+      </p>
+
+      <h4 style="margin-bottom: 10px; color: var(--accent-in); font-size: 14px;">Step 1: Create Google Sheet</h4>
+      <p class="modal-text">
+        Gumawa ng Google Sheet with 3 sheets: <strong>"IN"</strong>, <strong>"OUT"</strong>, <strong>"Logs"</strong><br>
+        Headers for IN/OUT: <code>DATE, TIME, SHIFT, CATEGORY, REMARKS, AMOUNT, BANK_FEE, RECEIPT_URL, ROW_ID</code><br>
+        Headers for Logs: <code>TIMESTAMP, ACTION, TYPE, ROW_ID, DATA</code>
+      </p>
+
+      <h4 style="margin-bottom: 10px; color: var(--accent-in); font-size: 14px;">Step 2: Deploy Apps Script</h4>
+      <p class="modal-text">
+        Go to <strong>Extensions → Apps Script</strong>, paste the code from <code>google-apps-script.js</code>, then <strong>Deploy → New Deployment → Web app</strong>
+      </p>
+
+      <h4 style="margin-bottom: 10px; color: var(--accent-in); font-size: 14px;">Step 3: Enter Web App URL</h4>
+      <div class="form-group">
+        <input type="url" id="sheetsUrl" placeholder="https://script.google.com/macros/s/..." style="margin-bottom: 12px;">
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="setup-btn" onclick="saveGoogleSheetsUrl()">💾 Save & Connect</button>
+        <button class="setup-btn" style="background: var(--accent-out);" onclick="testConnection()">🔗 Test Connection</button>
+        <button class="modal-close" onclick="closeGoogleSheetsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Preview Modal -->
+  <div class="modal-overlay image-modal" id="imageModal">
+    <div class="modal">
+      <img id="modalImage" src="" alt="Receipt">
+      <div style="text-align: center; margin-top: 12px;">
+        <button class="modal-close" onclick="closeImageModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width: 400px; text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+      <h3 style="margin-bottom: 12px;">Delete Record?</h3>
+      <p class="modal-text">Are you sure you want to delete this record? This action will be logged for security purposes.</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="setup-btn" style="background: var(--accent-out);" onclick="confirmDelete()">🗑️ Delete</button>
+        <button class="modal-close" onclick="closeDeleteModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toastMessage">Entry added successfully!</span>
+  </div>
+
+  <!-- Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <p>📱 Install this app for quick access</p>
+    <button class="install-btn" onclick="installPWA()">Install</button>
+  </div>
+
+  <script>
+    // State
+    let currentTab = 'in';
+    let records = { in: [], out: [] };
+    let googleSheetsUrl = localStorage.getItem('googleSheetsUrl') || '';
+    let currentPhotoBase64 = null;
+    let deleteTargetId = null;
+    let deferredPrompt = null;
+
+    // Categories
+    const categories = {
+      in: ['Remittance', 'Additional Funds'],
+      out: ['Cashout', 'Expenses', 'Savings']
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFromStorage();
+      setDefaultDateTime();
+      updateUI();
+      updateConnectionStatus();
+    });
+
+    // PWA Install
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installBanner').classList.add('show');
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('installBanner').classList.remove('show');
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    function setDefaultDateTime() {
+      const now = new Date();
+      document.getElementById('entryDate').value = now.toISOString().split('T')[0];
+      document.getElementById('entryTime').value = now.toTimeString().slice(0,5);
+      
+      const hour = now.getHours();
+      let shift = '';
+      if (hour >= 4 && hour < 12) shift = '4AM-12NN';
+      else if (hour >= 12 && hour < 20) shift = '12NN-8PM';
+      else shift = '8PM-4AM';
+      document.getElementById('entryShift').value = shift;
+    }
+
+    function updateConnectionStatus() {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      
+      if (googleSheetsUrl) {
+        dot.className = 'status-dot';
+        text.textContent = 'Connected';
+      } else {
+        dot.className = 'status-dot offline';
+        text.textContent = 'Offline Mode';
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.${tab}-tab`).classList.add('active');
+      
+      const formPanel = document.getElementById('formPanel');
+      const formTitle = document.getElementById('formTitle');
+      const submitBtn = document.getElementById('submitBtn');
+      const categorySelect = document.getElementById('entryCategory');
+      
+      // Update category options
+      categorySelect.innerHTML = '<option value="">Select Category</option>';
+      categories[tab].forEach(cat => {
+        const icon = getCategoryIcon(cat);
+        categorySelect.innerHTML += `<option value="${cat}">${icon} ${cat}</option>`;
+      });
+      
+      if (tab === 'in') {
+        formPanel.classList.remove('out-mode');
+        formTitle.className = 'form-title in';
+        formTitle.innerHTML = '<div class="icon">💰</div><span>New Fund In Entry</span>';
+        submitBtn.className = 'submit-btn in-btn';
+        submitBtn.innerHTML = '<span>➕</span> Add Fund In Entry';
+        document.getElementById('tableTitle').textContent = 'Fund In Records';
+      } else {
+        formPanel.classList.add('out-mode');
+        formTitle.className = 'form-title out';
+        formTitle.innerHTML = '<div class="icon">💸</div><span>New Fund Out Entry</span>';
+        submitBtn.className = 'submit-btn out-btn';
+        submitBtn.innerHTML = '<span>➕</span> Add Fund Out Entry';
+        document.getElementById('tableTitle').textContent = 'Fund Out Records';
+      }
+      
+      updateTable();
+    }
+
+    function getCategoryIcon(cat) {
+      const icons = {
+        'Remittance': '💸',
+        'Additional Funds': '💰',
+        'Cashout': '🏧',
+        'Expenses': '🛒',
+        'Savings': '🏦'
+      };
+      return icons[cat] || '📋';
+    }
+
+    // Photo Handling
+    function triggerPhotoUpload() {
+      if (!currentPhotoBase64) {
+        document.getElementById('galleryInput').click();
+      }
+    }
+
+    function openCamera() {
+      document.getElementById('cameraInput').click();
+    }
+
+    function openGallery() {
+      document.getElementById('galleryInput').click();
+    }
+
+    function handlePhotoSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          currentPhotoBase64 = e.target.result;
+          displayPhotoPreview(currentPhotoBase64);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function displayPhotoPreview(base64) {
+      document.getElementById('photoPlaceholder').style.display = 'none';
+      document.getElementById('photoPreviewContainer').style.display = 'block';
+      document.getElementById('photoPreview').src = base64;
+      document.getElementById('photoUploadArea').classList.add('has-photo');
+    }
+
+    function removePhoto() {
+      currentPhotoBase64 = null;
+      document.getElementById('photoPlaceholder').style.display = 'block';
+      document.getElementById('photoPreviewContainer').style.display = 'none';
+      document.getElementById('photoPreview').src = '';
+      document.getElementById('photoUploadArea').classList.remove('has-photo');
+      document.getElementById('cameraInput').value = '';
+      document.getElementById('galleryInput').value = '';
+    }
+
+    // Form Submission
+    async function handleSubmit(e) {
+      e.preventDefault();
+      
+      if (!currentPhotoBase64) {
+        showToast('Please upload or take a receipt photo', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="spinner"></div> Saving...';
+      
+      const entry = {
+        id: Date.now().toString(),
+        date: document.getElementById('entryDate').value,
+        time: document.getElementById('entryTime').value,
+        shift: document.getElementById('entryShift').value,
+        category: document.getElementById('entryCategory').value,
+        remarks: document.getElementById('entryRemarks').value,
+        amount: parseFloat(document.getElementById('entryAmount').value) || 0,
+        fee: parseFloat(document.getElementById('entryFee').value) || 0,
+        receipt: currentPhotoBase64,
+        type: currentTab
+      };
+      
+      records[currentTab].unshift(entry);
+      saveToStorage();
+      updateUI();
+      
+      // Send to Google Sheets
+      if (googleSheetsUrl) {
+        await sendToGoogleSheets('ADD', entry);
+      }
+      
+      // Reset form
+      document.getElementById('entryCategory').value = '';
+      document.getElementById('entryRemarks').value = '';
+      document.getElementById('entryAmount').value = '';
+      document.getElementById('entryFee').value = '0';
+      removePhoto();
+      setDefaultDateTime();
+      
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = `<span>➕</span> Add Fund ${currentTab === 'in' ? 'In' : 'Out'} Entry`;
+      
+      showToast('Entry added successfully!', 'success');
+    }
+
+    // Delete
+    function promptDelete(id) {
+      deleteTargetId = id;
+      document.getElementById('deleteModal').classList.add('active');
+    }
+
+    function closeDeleteModal() {
+      deleteTargetId = null;
+      document.getElementById('deleteModal').classList.remove('active');
+    }
+
+    async function confirmDelete() {
+      if (!deleteTargetId) return;
+      
+      const record = records[currentTab].find(r => r.id === deleteTargetId);
+      
+      // Send delete to Google Sheets first
+      if (googleSheetsUrl && record) {
+        await sendToGoogleSheets('DELETE', record);
+      }
+      
+      records[currentTab] = records[currentTab].filter(r => r.id !== deleteTargetId);
+      saveToStorage();
+      updateUI();
+      closeDeleteModal();
+      showToast('Record deleted and logged', 'warning');
+    }
+
+    // UI Updates
+    function updateUI() {
+      updateSummary();
+      updateTable();
+    }
+
+    function updateSummary() {
+      const totalIn = records.in.reduce((sum, r) => sum + r.amount, 0);
+      const totalOut = records.out.reduce((sum, r) => sum + r.amount, 0);
+      const totalInFees = records.in.reduce((sum, r) => sum + r.fee, 0);
+      const totalOutFees = records.out.reduce((sum, r) => sum + r.fee, 0);
+      const coh = totalIn - totalOut - totalInFees - totalOutFees;
+      
+      document.getElementById('totalCOH').textContent = formatCurrency(coh);
+      document.getElementById('totalIn').textContent = formatCurrency(totalIn);
+      document.getElementById('totalOut').textContent = formatCurrency(totalOut);
+      document.getElementById('totalFees').textContent = formatCurrency(totalInFees + totalOutFees);
+    }
+
+    function updateTable() {
+      const tbody = document.getElementById('tableBody');
+      const data = records[currentTab];
+      const countEl = document.getElementById('recordCount');
+      
+      countEl.textContent = `${data.length} record${data.length !== 1 ? 's' : ''}`;
+      
+      if (data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <div class="icon">📋</div>
+                <p>No records yet. Add your first entry!</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = data.map(record => `
+        <tr>
+          <td class="date-cell">
+            ${formatDate(record.date)}<br>
+            ${record.time}
+          </td>
+          <td>
+            <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift}</span>
+          </td>
+          <td>
+            <span class="category-badge ${getCategoryClass(record.category)}">${record.category}</span>
+          </td>
+          <td class="remarks-cell" title="${record.remarks}">${record.remarks}</td>
+          <td class="amount-cell ${currentTab}">${formatCurrency(record.amount)}</td>
+          <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
+          <td>
+            ${record.receipt ? 
+              `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">` : 
+              '<span class="no-receipt">—</span>'}
+          </td>
+          <td>
+            <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function showReceiptImage(id) {
+      const record = records[currentTab].find(r => r.id === id);
+      if (record && record.receipt) {
+        document.getElementById('modalImage').src = record.receipt;
+        document.getElementById('imageModal').classList.add('active');
+      }
+    }
+
+    function closeImageModal() {
+      document.getElementById('imageModal').classList.remove('active');
+    }
+
+    function formatCurrency(amount) {
+      return '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function getShiftClass(shift) {
+      if (shift.includes('4AM')) return 'shift-morning';
+      if (shift.includes('12NN')) return 'shift-afternoon';
+      return 'shift-night';
+    }
+
+    function getCategoryClass(cat) {
+      const classes = {
+        'Remittance': 'cat-remittance',
+        'Additional Funds': 'cat-additional',
+        'Cashout': 'cat-cashout',
+        'Expenses': 'cat-expenses',
+        'Savings': 'cat-savings'
+      };
+      return classes[cat] || '';
+    }
+
+    // Storage
+    function saveToStorage() {
+      localStorage.setItem('cohRecords', JSON.stringify(records));
+    }
+
+    function loadFromStorage() {
+      const saved = localStorage.getItem('cohRecords');
+      if (saved) {
+        records = JSON.parse(saved);
+      }
+    }
+
+    // Google Sheets Integration
+    function showGoogleSheetsModal() {
+      document.getElementById('gsModal').classList.add('active');
+      document.getElementById('sheetsUrl').value = googleSheetsUrl;
+    }
+
+    function closeGoogleSheetsModal() {
+      document.getElementById('gsModal').classList.remove('active');
+    }
+
+    function saveGoogleSheetsUrl() {
+      googleSheetsUrl = document.getElementById('sheetsUrl').value.trim();
+      localStorage.setItem('googleSheetsUrl', googleSheetsUrl);
+      updateConnectionStatus();
+      closeGoogleSheetsModal();
+      showToast('Google Sheets connected!', 'success');
+    }
+
+    async function testConnection() {
+      const url = document.getElementById('sheetsUrl').value.trim();
+      if (!url) {
+        showToast('Please enter a URL first', 'error');
+        return;
+      }
+      
+      try {
+        showToast('Testing connection...', 'warning');
+        const response = await fetch(`${url}?action=test`, { mode: 'no-cors' });
+        showToast('Connection test sent!', 'success');
+      } catch (err) {
+        showToast('Connection test sent (check your sheet)', 'warning');
+      }
+    }
+
+    async function sendToGoogleSheets(action, entry) {
+      if (!googleSheetsUrl) return;
+      
+      const dot = document.getElementById('statusDot');
+      dot.className = 'status-dot syncing';
+      
+      try {
+        // For base64 images, we'll send a compressed version or just indicate there's an image
+        const payload = {
+          action: action,
+          type: entry.type.toUpperCase(),
+          rowId: entry.id,
+          date: entry.date,
+          time: entry.time,
+          shift: entry.shift,
+          category: entry.category,
+          remarks: entry.remarks,
+          amount: entry.amount,
+          fee: entry.fee,
+          hasReceipt: !!entry.receipt,
+          // Store receipt separately or use Google Drive
+          receiptData: entry.receipt ? entry.receipt.substring(0, 100) + '...[truncated]' : null,
+          timestamp: new Date().toISOString()
+        };
+        
+        await fetch(googleSheetsUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        dot.className = 'status-dot';
+      } catch (err) {
+        dot.className = 'status-dot offline';
+        console.log('Sync attempted:', err);
+      }
+    }
+
+    // Toast
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      
+      toastMessage.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Modal close handlers
+    document.getElementById('gsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'gsModal') closeGoogleSheetsModal();
+    });
+
+    document.getElementById('imageModal').addEventListener('click', (e) => {
+      if (e.target.id === 'imageModal') closeImageModal();
+    });
+
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+      if (e.target.id === 'deleteModal') closeDeleteModal();
+    });
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
