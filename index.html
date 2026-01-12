@@ -6,8 +6,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0a0a0f">
-  <title>EXTREME WBC - Cash on Hand Tracker</title>
+  <title>Cash on Hand - EXTREME WBC Tracker</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -86,6 +88,14 @@
       gap: 12px;
     }
 
+    .app-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+    }
+
     .logo-icon {
       width: 44px;
       height: 44px;
@@ -103,6 +113,10 @@
       font-size: 20px;
       font-weight: 700;
       letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffd700, #ffaa00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .logo span {
@@ -1444,10 +1458,10 @@
   <div class="container">
     <header>
       <div class="logo">
-        <div class="logo-icon">₱</div>
+        <img src="icon.png" alt="Cash on Hand" class="app-logo">
         <div>
-          <h1>EXTREME WBC</h1>
-          <span>Cash on Hand Tracker 2026</span>
+          <h1>Cash on Hand</h1>
+          <span>EXTREME WBC Tracker 2026</span>
         </div>
       </div>
       <div class="header-actions">
@@ -1455,7 +1469,7 @@
           🔄 Sync
         </button>
         <button class="setup-btn" onclick="showGoogleSheetsModal()">
-          📊 Settings
+          ⚙️ Settings
         </button>
         <div class="connection-status" id="connectionStatus">
           <div class="status-dot" id="statusDot"></div>
