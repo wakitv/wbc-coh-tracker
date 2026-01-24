@@ -263,10 +263,37 @@
     /* Form Panel */
     .form-panel {
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 2px solid var(--accent-in);
       border-radius: 16px;
       padding: 24px;
       height: fit-content;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 212, 170, 0.1);
+    }
+
+    .form-panel.out-mode {
+      border-color: var(--accent-out);
+      box-shadow: 0 0 20px rgba(255, 107, 107, 0.1);
+    }
+
+    /* Form header accent bar */
+    .form-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 24px;
+      right: 24px;
+      height: 3px;
+      background: var(--gradient-in);
+      border-radius: 0 0 3px 3px;
+    }
+
+    .form-panel.out-mode::before {
+      background: var(--gradient-out);
+    }
+
+    .form-panel {
+      position: relative;
     }
 
     .form-title {
@@ -290,6 +317,21 @@
 
     .form-title.in .icon { background: var(--accent-in-dim); }
     .form-title.out .icon { background: var(--accent-out-dim); }
+
+    /* Input focus colors based on mode */
+    .form-panel input:focus,
+    .form-panel select:focus,
+    .form-panel textarea:focus {
+      border-color: var(--accent-in);
+      box-shadow: 0 0 0 3px var(--accent-in-dim);
+    }
+
+    .form-panel.out-mode input:focus,
+    .form-panel.out-mode select:focus,
+    .form-panel.out-mode textarea:focus {
+      border-color: var(--accent-out);
+      box-shadow: 0 0 0 3px var(--accent-out-dim);
+    }
 
     .form-group {
       margin-bottom: 16px;
@@ -372,21 +414,35 @@
       cursor: pointer;
       transition: all 0.2s;
       background: var(--bg-elevated);
+      outline: none;
     }
 
-    .photo-upload-area:hover {
+    .photo-upload-area:hover,
+    .photo-upload-area:focus {
       border-color: var(--accent-in);
       background: var(--accent-in-dim);
     }
 
-    .out-mode .photo-upload-area:hover {
+    .out-mode .photo-upload-area:hover,
+    .out-mode .photo-upload-area:focus {
       border-color: var(--accent-out);
       background: var(--accent-out-dim);
     }
 
     .photo-upload-area.has-photo {
-      padding: 8px;
+      padding: 12px;
       border-style: solid;
+    }
+
+    .photo-upload-area.paste-ready {
+      border-color: var(--accent-blue);
+      background: rgba(77, 159, 255, 0.1);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(77, 159, 255, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(77, 159, 255, 0); }
     }
 
     .photo-upload-icon {
@@ -403,6 +459,14 @@
       color: var(--text-primary);
       display: block;
       margin-bottom: 4px;
+    }
+
+    .paste-hint {
+      display: block;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--accent-blue);
+      opacity: 0.8;
     }
 
     .photo-buttons {
@@ -428,6 +492,117 @@
 
     .photo-btn:hover {
       background: var(--bg-elevated);
+    }
+
+    .photo-btn.paste-btn {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    .photo-btn.paste-btn:hover {
+      background: rgba(77, 159, 255, 0.15);
+    }
+
+    /* Multiple Photos Grid */
+    .photos-preview-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .photos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 8px;
+    }
+
+    .photo-thumb-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--bg-primary);
+    }
+
+    .photo-thumb-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .photo-thumb-item img:hover {
+      transform: scale(1.05);
+    }
+
+    .photo-thumb-remove {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(255, 107, 107, 0.9);
+      border: none;
+      color: white;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .photo-thumb-item:hover .photo-thumb-remove {
+      opacity: 1;
+    }
+
+    .photo-thumb-count {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .add-more-photos {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .add-photo-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .add-photo-btn:hover {
+      border-color: var(--accent-in);
+      color: var(--accent-in);
+      background: var(--accent-in-dim);
+    }
+
+    .add-photo-hint {
+      font-size: 11px;
+      color: var(--text-muted);
     }
 
     .photo-preview {
@@ -598,6 +773,7 @@
     .cat-cashout { background: rgba(255, 107, 107, 0.15); color: var(--accent-out); }
     .cat-expenses { background: rgba(255, 159, 26, 0.15); color: #ff9f1a; }
     .cat-savings { background: rgba(157, 78, 221, 0.15); color: var(--accent-purple); }
+    .cat-salary { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 
     .amount-cell {
       font-family: 'Space Mono', monospace;
@@ -1644,6 +1820,7 @@
             <option value="Cashout">Cashout</option>
             <option value="Expenses">Expenses</option>
             <option value="Savings">Savings</option>
+            <option value="Salary">Salary</option>
           </optgroup>
         </select>
         <select id="shiftFilter" onchange="filterRecords()">
@@ -1724,26 +1901,30 @@
           </div>
 
           <div class="form-group">
-            <label>Receipt Photo <span class="required">*</span></label>
-            <div class="photo-upload-area" id="photoUploadArea" onclick="triggerPhotoUpload()">
+            <label>Receipt Photo(s) <span class="required">*</span></label>
+            <div class="photo-upload-area" id="photoUploadArea" onclick="triggerPhotoUpload()" tabindex="0">
               <div id="photoPlaceholder">
                 <div class="photo-upload-icon">📷</div>
                 <div class="photo-upload-text">
                   <strong>Upload or Take Photo</strong>
-                  Tap to capture or select receipt image
+                  <span class="paste-hint">📋 Ctrl+V to paste copied image</span>
                 </div>
                 <div class="photo-buttons">
                   <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
                     📸 Camera
                   </button>
-                  <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
-                    🖼️ Gallery
+                  <button type="button" class="photo-btn paste-btn" onclick="event.stopPropagation(); focusForPaste()">
+                    📋 Paste
                   </button>
                 </div>
               </div>
-              <div id="photoPreviewContainer" class="photo-preview-container" style="display: none;">
-                <img id="photoPreview" class="photo-preview" src="" alt="Receipt preview">
-                <button type="button" class="remove-photo" onclick="event.stopPropagation(); removePhoto()">✕</button>
+              <div id="photosPreviewContainer" class="photos-preview-container" style="display: none;">
+                <div id="photosGrid" class="photos-grid"></div>
+                <div class="add-more-photos">
+                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); openCamera()">📸</button>
+                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); focusForPaste()">📋</button>
+                  <span class="add-photo-hint">Add more</span>
+                </div>
               </div>
             </div>
             <input type="file" id="cameraInput" class="hidden-input" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)">
@@ -1879,7 +2060,7 @@
     let records = { in: [], out: [] };
     let filteredRecords = { in: [], out: [] };
     let googleSheetsUrl = localStorage.getItem('googleSheetsUrl') || '';
-    let currentPhotoBase64 = null;
+    let currentPhotos = []; // Changed to array for multiple photos
     let deleteTargetId = null;
     let deferredPrompt = null;
     
@@ -1893,7 +2074,7 @@
     // Categories
     const categories = {
       in: ['Remittance', 'Additional Funds'],
-      out: ['Cashout', 'Expenses', 'Savings']
+      out: ['Cashout', 'Expenses', 'Savings', 'Salary']
     };
 
     // Initialize
@@ -2398,13 +2579,14 @@
       categoryChart = new Chart(categoryCtx, {
         type: 'doughnut',
         data: {
-          labels: ['Cashout', 'Expenses', 'Savings'],
+          labels: ['Cashout', 'Expenses', 'Savings', 'Salary'],
           datasets: [{
-            data: [0, 0, 0],
+            data: [0, 0, 0, 0],
             backgroundColor: [
               'rgba(255, 107, 107, 0.8)',
               'rgba(255, 159, 26, 0.8)',
-              'rgba(157, 78, 221, 0.8)'
+              'rgba(157, 78, 221, 0.8)',
+              'rgba(16, 185, 129, 0.8)'
             ],
             borderWidth: 0
           }]
@@ -2520,7 +2702,7 @@
       const startStr = startDate.toISOString().split('T')[0];
       const endStr = endDate.toISOString().split('T')[0];
       
-      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0 };
+      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0, 'Salary': 0 };
       records.out.filter(r => r.date >= startStr && r.date <= endStr).forEach(r => {
         if (categoryTotals.hasOwnProperty(r.category)) {
           categoryTotals[r.category] += r.amount;
@@ -2530,7 +2712,8 @@
       categoryChart.data.datasets[0].data = [
         categoryTotals['Cashout'],
         categoryTotals['Expenses'],
-        categoryTotals['Savings']
+        categoryTotals['Savings'],
+        categoryTotals['Salary']
       ];
       categoryChart.update();
     }
@@ -2765,6 +2948,7 @@
           <option value="Cashout">Cashout</option>
           <option value="Expenses">Expenses</option>
           <option value="Savings">Savings</option>
+          <option value="Salary">Salary</option>
         `;
       }
       
@@ -2794,15 +2978,17 @@
         'Additional Funds': '💰',
         'Cashout': '🏧',
         'Expenses': '🛒',
-        'Savings': '🏦'
+        'Savings': '🏦',
+        'Salary': '💵'
       };
       return icons[cat] || '📋';
     }
 
     // Photo Handling
     function triggerPhotoUpload() {
-      if (!currentPhotoBase64) {
-        document.getElementById('galleryInput').click();
+      // Only trigger if no photos yet, otherwise let user use buttons
+      if (currentPhotos.length === 0) {
+        focusForPaste();
       }
     }
 
@@ -2814,51 +3000,87 @@
       document.getElementById('galleryInput').click();
     }
 
+    // Focus on upload area for paste
+    function focusForPaste() {
+      const uploadArea = document.getElementById('photoUploadArea');
+      uploadArea.focus();
+      uploadArea.classList.add('paste-ready');
+      showToast('Ready! Press Ctrl+V to paste image', 'success');
+      
+      // Remove paste-ready class after 5 seconds
+      setTimeout(() => {
+        uploadArea.classList.remove('paste-ready');
+      }, 5000);
+    }
+
+    // Handle paste event for images
+    document.addEventListener('paste', async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            await processImageFile(file, 'Pasted image');
+          }
+          break;
+        }
+      }
+    });
+
+    // Process image file (from camera, gallery, or paste)
+    async function processImageFile(file, source = 'Selected') {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      console.log(source + ':', file.name || 'clipboard', fileSizeMB + 'MB');
+      
+      showToast('Processing photo...', 'warning');
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const originalBase64 = e.target.result;
+          console.log('Original base64 size:', Math.round(originalBase64.length / 1024) + 'KB');
+          
+          // Compress the image
+          const compressed = await compressImage(originalBase64, 800, 0.6);
+          
+          // Add to photos array
+          currentPhotos.push({
+            id: Date.now() + '_' + currentPhotos.length,
+            data: compressed
+          });
+          
+          updatePhotosPreview();
+          
+          const compressedKB = Math.round(compressed.length / 1024);
+          showToast(`Photo added (${compressedKB}KB) - Total: ${currentPhotos.length}`, 'success');
+          
+        } catch (err) {
+          console.error('Photo processing error:', err);
+          // Fallback to original if compression fails
+          currentPhotos.push({
+            id: Date.now() + '_' + currentPhotos.length,
+            data: e.target.result
+          });
+          updatePhotosPreview();
+          showToast('Photo added', 'warning');
+        }
+      };
+      reader.onerror = () => {
+        showToast('Failed to read photo', 'error');
+      };
+      reader.readAsDataURL(file);
+    }
+
     function handlePhotoSelect(event) {
       const file = event.target.files[0];
       if (file) {
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        console.log('Selected file:', file.name, fileSizeMB + 'MB');
-        
-        // Show loading state
-        document.getElementById('photoPlaceholder').innerHTML = `
-          <div class="photo-upload-icon">⏳</div>
-          <div class="photo-upload-text">
-            <strong>Processing photo...</strong>
-            Original size: ${fileSizeMB}MB
-          </div>
-        `;
-        
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            const originalBase64 = e.target.result;
-            console.log('Original base64 size:', Math.round(originalBase64.length / 1024) + 'KB');
-            
-            // Pre-compress for preview and storage
-            showToast('Compressing photo...', 'warning');
-            const compressed = await compressImage(originalBase64, 800, 0.6);
-            
-            currentPhotoBase64 = compressed;
-            displayPhotoPreview(compressed);
-            
-            const compressedKB = Math.round(compressed.length / 1024);
-            showToast(`Photo ready (${compressedKB}KB)`, 'success');
-            
-          } catch (err) {
-            console.error('Photo processing error:', err);
-            // Fallback to original if compression fails
-            currentPhotoBase64 = e.target.result;
-            displayPhotoPreview(e.target.result);
-            showToast('Photo added (may be slow to upload)', 'warning');
-          }
-        };
-        reader.onerror = () => {
-          showToast('Failed to read photo', 'error');
-          resetPhotoPlaceholder();
-        };
-        reader.readAsDataURL(file);
+        processImageFile(file, 'Selected file');
       }
+      // Reset input so same file can be selected again
+      event.target.value = '';
     }
     
     function resetPhotoPlaceholder() {
@@ -2866,24 +3088,70 @@
         <div class="photo-upload-icon">📷</div>
         <div class="photo-upload-text">
           <strong>Upload or Take Photo</strong>
-          Tap to capture or select receipt image
+          <span class="paste-hint">📋 Ctrl+V to paste copied image</span>
         </div>
         <div class="photo-buttons">
           <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
             📸 Camera
           </button>
-          <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
-            🖼️ Gallery
+          <button type="button" class="photo-btn paste-btn" onclick="event.stopPropagation(); focusForPaste()">
+            📋 Paste
           </button>
         </div>
       `;
     }
 
+    // Update photos preview grid
+    function updatePhotosPreview() {
+      const placeholder = document.getElementById('photoPlaceholder');
+      const container = document.getElementById('photosPreviewContainer');
+      const grid = document.getElementById('photosGrid');
+      const uploadArea = document.getElementById('photoUploadArea');
+      
+      if (currentPhotos.length === 0) {
+        placeholder.style.display = 'block';
+        container.style.display = 'none';
+        uploadArea.classList.remove('has-photo');
+        resetPhotoPlaceholder();
+        return;
+      }
+      
+      placeholder.style.display = 'none';
+      container.style.display = 'flex';
+      uploadArea.classList.add('has-photo');
+      uploadArea.classList.remove('paste-ready');
+      
+      grid.innerHTML = currentPhotos.map((photo, index) => `
+        <div class="photo-thumb-item">
+          <img src="${photo.data}" alt="Receipt ${index + 1}" onclick="viewPhoto(${index})">
+          <button type="button" class="photo-thumb-remove" onclick="event.stopPropagation(); removePhotoAt(${index})">✕</button>
+          <span class="photo-thumb-count">${index + 1}</span>
+        </div>
+      `).join('');
+    }
+
+    // View photo in modal
+    function viewPhoto(index) {
+      if (currentPhotos[index]) {
+        document.getElementById('modalImage').src = currentPhotos[index].data;
+        document.getElementById('imageModal').classList.add('active');
+      }
+    }
+
+    // Remove photo at specific index
+    function removePhotoAt(index) {
+      currentPhotos.splice(index, 1);
+      updatePhotosPreview();
+      showToast('Photo removed', 'warning');
+    }
+
     function displayPhotoPreview(base64) {
-      document.getElementById('photoPlaceholder').style.display = 'none';
-      document.getElementById('photoPreviewContainer').style.display = 'block';
-      document.getElementById('photoPreview').src = base64;
-      document.getElementById('photoUploadArea').classList.add('has-photo');
+      // Legacy function - now redirects to new system
+      currentPhotos.push({
+        id: Date.now(),
+        data: base64
+      });
+      updatePhotosPreview();
     }
 
     // Compress image to reduce file size for upload
@@ -2975,39 +3243,19 @@
     }
 
     function removePhoto() {
-      currentPhotoBase64 = null;
-      document.getElementById('photoPreviewContainer').style.display = 'none';
-      document.getElementById('photoPreview').src = '';
-      document.getElementById('photoUploadArea').classList.remove('has-photo');
+      // Clear all photos
+      currentPhotos = [];
+      updatePhotosPreview();
       document.getElementById('cameraInput').value = '';
       document.getElementById('galleryInput').value = '';
-      
-      // Reset placeholder content
-      const placeholder = document.getElementById('photoPlaceholder');
-      placeholder.style.display = 'block';
-      placeholder.innerHTML = `
-        <div class="photo-upload-icon">📷</div>
-        <div class="photo-upload-text">
-          <strong>Upload or Take Photo</strong>
-          Tap to capture or select receipt image
-        </div>
-        <div class="photo-buttons">
-          <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
-            📸 Camera
-          </button>
-          <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
-            🖼️ Gallery
-          </button>
-        </div>
-      `;
     }
 
     // Form Submission
     async function handleSubmit(e) {
       e.preventDefault();
       
-      if (!currentPhotoBase64) {
-        showToast('Please upload or take a receipt photo', 'error');
+      if (currentPhotos.length === 0) {
+        showToast('Please upload or take at least one receipt photo', 'error');
         return;
       }
 
@@ -3017,9 +3265,12 @@
       if (submitBtn.disabled) return;
       
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<div class="spinner"></div> Processing photo...';
+      submitBtn.innerHTML = '<div class="spinner"></div> Processing photos...';
       
       try {
+        // Use first photo as primary receipt
+        const primaryReceipt = currentPhotos[0]?.data || null;
+        
         const entry = {
           id: Date.now().toString(),
           date: document.getElementById('entryDate').value,
@@ -3029,7 +3280,9 @@
           remarks: document.getElementById('entryRemarks').value,
           amount: parseFloat(document.getElementById('entryAmount').value) || 0,
           fee: parseFloat(document.getElementById('entryFee').value) || 0,
-          receipt: currentPhotoBase64,
+          receipt: primaryReceipt,
+          receipts: currentPhotos.map(p => p.data), // Store all photos
+          receiptCount: currentPhotos.length,
           type: currentTab
         };
         
@@ -3053,7 +3306,7 @@
         removePhoto();
         setDefaultDateTime();
         
-        showToast('Entry added successfully!', 'success');
+        showToast(`Entry added with ${entry.receiptCount} photo(s)!`, 'success');
         
       } catch (err) {
         console.error('Submit error:', err);
@@ -3282,7 +3535,8 @@
         'Additional Funds': 'cat-additional',
         'Cashout': 'cat-cashout',
         'Expenses': 'cat-expenses',
-        'Savings': 'cat-savings'
+        'Savings': 'cat-savings',
+        'Salary': 'cat-salary'
       };
       return classes[cat] || '';
     }
