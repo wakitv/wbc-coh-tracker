@@ -482,6 +482,25 @@
       opacity: 0.8;
     }
 
+    /* Desktop: show paste hint, hide camera hint */
+    .upload-hints .hint-paste {
+      display: block;
+    }
+
+    .upload-hints .hint-camera {
+      display: none;
+    }
+
+    /* Mobile: show camera hint, hide paste hint */
+    @media (hover: none), (pointer: coarse) {
+      .upload-hints .hint-paste {
+        display: none;
+      }
+      .upload-hints .hint-camera {
+        display: block;
+      }
+    }
+
     .photo-buttons {
       display: flex;
       gap: 8px;
@@ -520,7 +539,17 @@
     /* Hide camera button on desktop/laptop (devices with mouse/hover) */
     @media (hover: hover) and (pointer: fine) {
       .photo-btn.camera-btn,
-      .add-photo-btn.camera-btn {
+      .add-photo-btn.camera-btn,
+      .hint-camera {
+        display: none;
+      }
+    }
+
+    /* Hide paste button on mobile/tablet (touch devices) */
+    @media (hover: none), (pointer: coarse) {
+      .photo-btn.paste-btn,
+      .add-photo-btn.paste-btn,
+      .hint-paste {
         display: none;
       }
     }
@@ -1939,8 +1968,9 @@
                 <div class="photo-upload-text">
                   <strong>Upload or Take Photo</strong>
                   <span class="upload-hints">
+                    <span class="hint-camera">📸 Use camera to capture receipt</span>
                     <span>🖼️ Gallery supports multiple selection</span>
-                    <span>📋 Ctrl+V to paste copied image</span>
+                    <span class="hint-paste">📋 Ctrl+V to paste copied image</span>
                   </span>
                 </div>
                 <div class="photo-buttons">
@@ -1960,7 +1990,7 @@
                 <div class="add-more-photos">
                   <button type="button" class="add-photo-btn camera-btn" onclick="event.stopPropagation(); openCamera()" title="Camera">📸</button>
                   <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); openGallery()" title="Gallery">🖼️</button>
-                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); focusForPaste()" title="Paste">📋</button>
+                  <button type="button" class="add-photo-btn paste-btn" onclick="event.stopPropagation(); focusForPaste()" title="Paste">📋</button>
                   <span class="add-photo-hint">Add more</span>
                 </div>
               </div>
@@ -3141,8 +3171,9 @@
         <div class="photo-upload-text">
           <strong>Upload or Take Photo</strong>
           <span class="upload-hints">
+            <span class="hint-camera">📸 Use camera to capture receipt</span>
             <span>🖼️ Gallery supports multiple selection</span>
-            <span>📋 Ctrl+V to paste copied image</span>
+            <span class="hint-paste">📋 Ctrl+V to paste copied image</span>
           </span>
         </div>
         <div class="photo-buttons">
