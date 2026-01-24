@@ -469,15 +469,29 @@
       opacity: 0.8;
     }
 
+    .upload-hints {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .upload-hints span {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
     .photo-buttons {
       display: flex;
       gap: 8px;
       justify-content: center;
       margin-top: 12px;
+      flex-wrap: wrap;
     }
 
     .photo-btn {
-      padding: 8px 16px;
+      padding: 8px 14px;
       border: 1px solid var(--border);
       background: var(--bg-card);
       border-radius: 8px;
@@ -488,10 +502,27 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      flex: 1;
+      min-width: 80px;
+      max-width: 110px;
+      justify-content: center;
     }
 
     .photo-btn:hover {
       background: var(--bg-elevated);
+      border-color: var(--accent-in);
+    }
+
+    .out-mode .photo-btn:hover {
+      border-color: var(--accent-out);
+    }
+
+    /* Hide camera button on desktop/laptop (devices with mouse/hover) */
+    @media (hover: hover) and (pointer: fine) {
+      .photo-btn.camera-btn,
+      .add-photo-btn.camera-btn {
+        display: none;
+      }
     }
 
     .photo-btn.paste-btn {
@@ -1907,11 +1938,17 @@
                 <div class="photo-upload-icon">📷</div>
                 <div class="photo-upload-text">
                   <strong>Upload or Take Photo</strong>
-                  <span class="paste-hint">📋 Ctrl+V to paste copied image</span>
+                  <span class="upload-hints">
+                    <span>🖼️ Gallery supports multiple selection</span>
+                    <span>📋 Ctrl+V to paste copied image</span>
+                  </span>
                 </div>
                 <div class="photo-buttons">
-                  <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
+                  <button type="button" class="photo-btn camera-btn" onclick="event.stopPropagation(); openCamera()">
                     📸 Camera
+                  </button>
+                  <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
+                    🖼️ Gallery
                   </button>
                   <button type="button" class="photo-btn paste-btn" onclick="event.stopPropagation(); focusForPaste()">
                     📋 Paste
@@ -1921,14 +1958,15 @@
               <div id="photosPreviewContainer" class="photos-preview-container" style="display: none;">
                 <div id="photosGrid" class="photos-grid"></div>
                 <div class="add-more-photos">
-                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); openCamera()">📸</button>
-                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); focusForPaste()">📋</button>
+                  <button type="button" class="add-photo-btn camera-btn" onclick="event.stopPropagation(); openCamera()" title="Camera">📸</button>
+                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); openGallery()" title="Gallery">🖼️</button>
+                  <button type="button" class="add-photo-btn" onclick="event.stopPropagation(); focusForPaste()" title="Paste">📋</button>
                   <span class="add-photo-hint">Add more</span>
                 </div>
               </div>
             </div>
             <input type="file" id="cameraInput" class="hidden-input" accept="image/*" capture="environment" onchange="handlePhotoSelect(event)">
-            <input type="file" id="galleryInput" class="hidden-input" accept="image/*" onchange="handlePhotoSelect(event)">
+            <input type="file" id="galleryInput" class="hidden-input" accept="image/*" multiple onchange="handleMultiplePhotoSelect(event)">
           </div>
 
           <button type="submit" class="submit-btn in-btn" id="submitBtn">
@@ -2988,7 +3026,7 @@
     function triggerPhotoUpload() {
       // Only trigger if no photos yet, otherwise let user use buttons
       if (currentPhotos.length === 0) {
-        focusForPaste();
+        openGallery(); // Open gallery by default when clicking the area
       }
     }
 
@@ -3082,17 +3120,37 @@
       // Reset input so same file can be selected again
       event.target.value = '';
     }
+
+    // Handle multiple file selection from gallery
+    async function handleMultiplePhotoSelect(event) {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        showToast(`Processing ${files.length} photo(s)...`, 'warning');
+        
+        for (let i = 0; i < files.length; i++) {
+          await processImageFile(files[i], `Photo ${i + 1}`);
+        }
+      }
+      // Reset input so same files can be selected again
+      event.target.value = '';
+    }
     
     function resetPhotoPlaceholder() {
       document.getElementById('photoPlaceholder').innerHTML = `
         <div class="photo-upload-icon">📷</div>
         <div class="photo-upload-text">
           <strong>Upload or Take Photo</strong>
-          <span class="paste-hint">📋 Ctrl+V to paste copied image</span>
+          <span class="upload-hints">
+            <span>🖼️ Gallery supports multiple selection</span>
+            <span>📋 Ctrl+V to paste copied image</span>
+          </span>
         </div>
         <div class="photo-buttons">
-          <button type="button" class="photo-btn" onclick="event.stopPropagation(); openCamera()">
+          <button type="button" class="photo-btn camera-btn" onclick="event.stopPropagation(); openCamera()">
             📸 Camera
+          </button>
+          <button type="button" class="photo-btn" onclick="event.stopPropagation(); openGallery()">
+            🖼️ Gallery
           </button>
           <button type="button" class="photo-btn paste-btn" onclick="event.stopPropagation(); focusForPaste()">
             📋 Paste
