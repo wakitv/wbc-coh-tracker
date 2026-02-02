@@ -2082,6 +2082,31 @@
         <button class="setup-btn" style="background: var(--accent-out);" onclick="testConnection()">🔗 Test Connection</button>
         <button class="modal-close" onclick="closeGoogleSheetsModal()">Close</button>
       </div>
+
+      <!-- Divider -->
+      <div style="border-top: 1px solid var(--border); margin: 20px 0;"></div>
+
+      <!-- App Settings Section -->
+      <h4 style="margin-bottom: 10px; color: var(--accent-blue); font-size: 14px;">⚙️ App Settings</h4>
+      
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+        <button class="setup-btn" style="background: var(--accent-yellow); color: #000;" onclick="hardRefresh()">
+          🔄 Hard Refresh
+        </button>
+      </div>
+
+      <div style="background: var(--bg-elevated); padding: 12px; border-radius: 8px; font-size: 11px; color: var(--text-muted);">
+        <strong style="color: var(--text-secondary);">ℹ️ Hard Refresh</strong>
+        <p style="margin-top: 6px;">Reload app with latest updates (same as Ctrl+Shift+R). Use this if you uploaded a new version.</p>
+      </div>
+
+      <!-- App Info -->
+      <div style="border-top: 1px solid var(--border); margin: 20px 0;"></div>
+      <div style="text-align: center; font-size: 11px; color: var(--text-muted);">
+        <strong>Cash on Hand Tracker</strong> v2.1<br>
+        EXTREME WBC © 2026<br>
+        <span id="offlineStatus">🟢 Online</span>
+      </div>
     </div>
   </div>
 
@@ -2166,6 +2191,14 @@
     // Sync records FROM Google Sheets (for cross-device sync)
     async function syncFromGoogleSheets() {
       if (!googleSheetsUrl) return;
+      
+      // Check if online
+      if (!navigator.onLine) {
+        showToast('📴 Offline - Using cached data', 'warning');
+        document.getElementById('statusDot').className = 'status-dot offline';
+        document.getElementById('statusText').textContent = 'Offline Mode';
+        return;
+      }
       
       const dot = document.getElementById('statusDot');
       const statusText = document.getElementById('statusText');
@@ -2321,10 +2354,17 @@
 
     // Also sync when coming back online
     window.addEventListener('online', () => {
+      updateConnectionStatus();
       if (googleSheetsUrl) {
-        showToast('Back online! Syncing...', 'success');
+        showToast('🟢 Back online! Syncing...', 'success');
         syncFromGoogleSheets();
       }
+    });
+
+    // Handle going offline
+    window.addEventListener('offline', () => {
+      updateConnectionStatus();
+      showToast('📴 You are offline - Data saved locally', 'warning');
     });
 
     // Dashboard Toggle
@@ -2609,7 +2649,7 @@
             ticks: { 
               color: '#8b8b9e', 
               font: { size: 10 },
-              callback: (value) => '₱' + (value / 1000).toFixed(0) + 'k'
+              callback: (value) => '₱' + value.toLocaleString('en-US')
             },
             grid: { color: 'rgba(255,255,255,0.05)' }
           }
@@ -2975,12 +3015,15 @@
       const dot = document.getElementById('statusDot');
       const text = document.getElementById('statusText');
       
-      if (googleSheetsUrl) {
+      if (!navigator.onLine) {
+        dot.className = 'status-dot offline';
+        text.textContent = '📴 Offline';
+      } else if (googleSheetsUrl) {
         dot.className = 'status-dot';
-        text.textContent = 'Connected';
+        text.textContent = '🟢 Connected';
       } else {
         dot.className = 'status-dot offline';
-        text.textContent = 'Offline Mode';
+        text.textContent = 'Local Only';
       }
     }
 
@@ -3576,7 +3619,12 @@
     }
 
     function formatCurrency(amount) {
-      return '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      // Format number with commas and 2 decimal places
+      const num = parseFloat(amount) || 0;
+      return '₱' + num.toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      });
     }
 
     function formatDate(dateStr) {
@@ -3646,6 +3694,7 @@
     function showGoogleSheetsModal() {
       document.getElementById('gsModal').classList.add('active');
       document.getElementById('sheetsUrl').value = googleSheetsUrl;
+      updateOfflineStatusIndicator();
     }
 
     function closeGoogleSheetsModal() {
@@ -3682,6 +3731,52 @@
         showToast('Connection test sent (check your sheet)', 'warning');
       }
     }
+
+    // Hard Refresh - like Ctrl+Shift+R
+    async function hardRefresh() {
+      showToast('Refreshing app...', 'warning');
+      
+      try {
+        // Unregister service worker to force fresh load
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+          }
+        }
+        
+        // Clear all caches
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+        
+        // Force reload from server (bypass cache)
+        window.location.reload(true);
+      } catch (err) {
+        console.error('Hard refresh error:', err);
+        // Fallback: just reload
+        window.location.reload(true);
+      }
+    }
+
+    // Update offline status indicator
+    function updateOfflineStatusIndicator() {
+      const indicator = document.getElementById('offlineStatus');
+      if (indicator) {
+        if (navigator.onLine) {
+          indicator.innerHTML = '🟢 Online';
+          indicator.style.color = 'var(--accent-in)';
+        } else {
+          indicator.innerHTML = '🔴 Offline Mode';
+          indicator.style.color = 'var(--accent-out)';
+        }
+      }
+    }
+
+    // Listen for online/offline events
+    window.addEventListener('online', updateOfflineStatusIndicator);
+    window.addEventListener('offline', updateOfflineStatusIndicator);
 
     async function sendToGoogleSheets(action, entry) {
       if (!googleSheetsUrl) return;
@@ -3792,9 +3887,38 @@
       if (e.target.id === 'deleteModal') closeDeleteModal();
     });
 
-    // Service Worker Registration
+    // Service Worker Registration with update handling
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.register('sw.js')
+        .then((registration) => {
+          console.log('SW registered:', registration.scope);
+          
+          // Check for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            console.log('SW update found');
+            
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New version available
+                showToast('New version available! Click Settings → Hard Refresh to update.', 'warning');
+              }
+            });
+          });
+        })
+        .catch((err) => {
+          console.log('SW registration failed:', err);
+        });
+      
+      // Handle controller change (new SW activated)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('SW controller changed');
+      });
+    }
+
+    // Show offline indicator on load if offline
+    if (!navigator.onLine) {
+      showToast('📴 Offline Mode - Data saved locally', 'warning');
     }
   </script>
 </body>
