@@ -155,7 +155,13 @@
     }
 
     .status-dot.offline { background: var(--accent-out); }
-    .status-dot.syncing { background: var(--accent-yellow); }
+    .status-dot.syncing { background: var(--accent-yellow); animation: pulse 1s infinite; }
+    .status-dot.pending { background: var(--accent-yellow); animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -834,6 +840,8 @@
     .cat-expenses { background: rgba(255, 159, 26, 0.15); color: #ff9f1a; }
     .cat-savings { background: rgba(157, 78, 221, 0.15); color: var(--accent-purple); }
     .cat-salary { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .cat-chips { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .cat-agent { background: rgba(236, 72, 153, 0.15); color: #ec4899; }
 
     .amount-cell {
       font-family: 'Space Mono', monospace;
@@ -1364,6 +1372,65 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+    }
+
+    /* Sync Button with Badge */
+    .sync-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, #4d9fff 0%, #2d7fe0 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sync-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(77, 159, 255, 0.4);
+    }
+
+    .sync-btn.syncing .sync-icon {
+      animation: spin 1s linear infinite;
+    }
+
+    .sync-btn.has-pending {
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      animation: pulse-sync 2s infinite;
+    }
+
+    @keyframes pulse-sync {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(243, 156, 18, 0); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .sync-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      background: var(--accent-out);
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--bg-card);
     }
 
     /* Image Preview Modal */
@@ -2039,8 +2106,10 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="setup-btn" onclick="syncFromGoogleSheets()" style="background: var(--accent-blue);" id="syncBtn">
-          🔄 Sync
+        <button class="sync-btn" onclick="manualSync()" id="syncBtn" title="Sync with Google Sheets">
+          <span class="sync-icon">🔄</span>
+          <span class="sync-text">Sync</span>
+          <span class="sync-badge" id="syncBadge" style="display: none;">0</span>
         </button>
         <button class="setup-btn" onclick="showLogsModal()" style="background: var(--accent-purple);">
           📋 Logs
@@ -2222,6 +2291,8 @@
             <option value="Expenses">Expenses</option>
             <option value="Savings">Savings</option>
             <option value="Salary">Salary</option>
+            <option value="Chips Refill">Chips Refill</option>
+            <option value="Agent Comms">Agent Comms</option>
           </optgroup>
         </select>
         <select id="shiftFilter" onchange="filterRecords()">
@@ -2646,7 +2717,7 @@
     // Categories
     const categories = {
       in: ['Remittance', 'Additional Funds'],
-      out: ['Cashout', 'Expenses', 'Savings', 'Salary']
+      out: ['Cashout', 'Expenses', 'Savings', 'Salary', 'Chips Refill', 'Agent Comms']
     };
 
     // Initialize
@@ -2661,9 +2732,15 @@
       updateUI();
       updateConnectionStatus();
       
-      // Then sync from Google Sheets if connected
-      if (googleSheetsUrl) {
-        syncFromGoogleSheets();
+      // Check for pending sync (don't auto-sync)
+      checkPendingSync();
+      
+      // Show reminder if there are pending items
+      const pendingCount = getPendingSyncCount();
+      if (pendingCount > 0 && googleSheetsUrl) {
+        setTimeout(() => {
+          showToast(`📤 ${pendingCount} item(s) pending sync`, 'warning');
+        }, 1000);
       }
     });
 
@@ -3170,14 +3247,16 @@
       categoryChart = new Chart(categoryCtx, {
         type: 'doughnut',
         data: {
-          labels: ['Cashout', 'Expenses', 'Savings', 'Salary'],
+          labels: ['Cashout', 'Expenses', 'Savings', 'Salary', 'Chips Refill', 'Agent Comms'],
           datasets: [{
-            data: [0, 0, 0, 0],
+            data: [0, 0, 0, 0, 0, 0],
             backgroundColor: [
               'rgba(255, 107, 107, 0.8)',
               'rgba(255, 159, 26, 0.8)',
               'rgba(157, 78, 221, 0.8)',
-              'rgba(16, 185, 129, 0.8)'
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(236, 72, 153, 0.8)'
             ],
             borderWidth: 0
           }]
@@ -3293,7 +3372,7 @@
       const startStr = startDate.toISOString().split('T')[0];
       const endStr = endDate.toISOString().split('T')[0];
       
-      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0, 'Salary': 0 };
+      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0, 'Salary': 0, 'Chips Refill': 0, 'Agent Comms': 0 };
       records.out.filter(r => r.date >= startStr && r.date <= endStr).forEach(r => {
         if (categoryTotals.hasOwnProperty(r.category)) {
           categoryTotals[r.category] += r.amount;
@@ -3304,7 +3383,9 @@
         categoryTotals['Cashout'],
         categoryTotals['Expenses'],
         categoryTotals['Savings'],
-        categoryTotals['Salary']
+        categoryTotals['Salary'],
+        categoryTotals['Chips Refill'],
+        categoryTotals['Agent Comms']
       ];
       categoryChart.update();
     }
@@ -3546,6 +3627,8 @@
           <option value="Expenses">Expenses</option>
           <option value="Savings">Savings</option>
           <option value="Salary">Salary</option>
+          <option value="Chips Refill">Chips Refill</option>
+          <option value="Agent Comms">Agent Comms</option>
         `;
       }
       
@@ -3576,7 +3659,9 @@
         'Cashout': '🏧',
         'Expenses': '🛒',
         'Savings': '🏦',
-        'Salary': '💵'
+        'Salary': '💵',
+        'Chips Refill': '🎰',
+        'Agent Comms': '👥'
       };
       return icons[cat] || '📋';
     }
@@ -3906,7 +3991,8 @@
           receipt: primaryReceipt,
           receipts: currentPhotos.map(p => p.data), // Store all photos
           receiptCount: currentPhotos.length,
-          type: currentTab
+          type: currentTab,
+          synced: false // Mark as not synced yet
         };
         
         // Save locally first (for offline support)
@@ -3914,12 +4000,8 @@
         saveToStorage();
         updateUI();
         
-        submitBtn.innerHTML = '<div class="spinner"></div> Saving to cloud...';
-        
-        // Send to Google Sheets
-        if (googleSheetsUrl) {
-          await sendToGoogleSheets('ADD', entry);
-        }
+        // Mark as pending sync (don't auto-sync)
+        markPendingSync();
         
         // Reset form
         document.getElementById('entryCategory').value = '';
@@ -3932,7 +4014,7 @@
         // Log the activity
         addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()} ${entry.remarks ? '(' + entry.remarks + ')' : ''}`);
         
-        showToast(`Entry added with ${entry.receiptCount} photo(s)!`, 'success');
+        showToast(`Entry added! Click Sync to upload.`, 'success');
         
       } catch (err) {
         console.error('Submit error:', err);
@@ -3993,7 +4075,7 @@
       const categorySelect = document.getElementById('editCategory');
       const cats = type === 'in' 
         ? ['Remittance', 'Additional Funds'] 
-        : ['Cashout', 'Expenses', 'Savings', 'Salary'];
+        : ['Cashout', 'Expenses', 'Savings', 'Salary', 'Chips Refill', 'Agent Comms'];
       
       categorySelect.innerHTML = cats.map(cat => 
         `<option value="${cat}" ${record.category === cat ? 'selected' : ''}>${getCategoryIcon(cat)} ${cat}</option>`
@@ -4231,7 +4313,8 @@
           receiptUrl: newReceiptUrl,
           receipts: newReceipts,
           receiptCount: newReceiptCount,
-          rowNumber: oldRecord.rowNumber
+          rowNumber: oldRecord.rowNumber,
+          synced: false // Mark as not synced
         };
         
         console.log('Updated record:', updatedRecord);
@@ -4240,11 +4323,8 @@
         records[editTargetType][recordIndex] = updatedRecord;
         saveToStorage();
         
-        // Send update to Google Sheets if connected
-        if (googleSheetsUrl) {
-          saveBtn.innerHTML = '<div class="spinner"></div> Syncing...';
-          await sendToGoogleSheets('EDIT', updatedRecord);
-        }
+        // Mark as pending sync (don't auto-sync)
+        markPendingSync();
         
         // Log the activity
         addLocalLog('EDIT', editTargetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()} ${updatedRecord.remarks ? '(' + updatedRecord.remarks + ')' : ''}`);
@@ -4253,7 +4333,7 @@
         filterRecords();
         updateUI();
         closeEditModal();
-        showToast('Entry updated successfully!', 'success');
+        showToast('Entry updated! Click Sync to upload.', 'success');
         
       } catch (err) {
         console.error('Edit error:', err);
@@ -4289,11 +4369,16 @@
       // Make sure record has the type
       record.type = currentTab;
       
-      // Send delete to Google Sheets first
-      if (googleSheetsUrl) {
-        showToast('Deleting from Google Sheets...', 'warning');
-        await sendToGoogleSheets('DELETE', record);
-      }
+      // Add to pending deletes for later sync
+      const pendingDeletes = JSON.parse(localStorage.getItem('pendingDeletes') || '[]');
+      pendingDeletes.push({
+        id: record.id,
+        type: currentTab,
+        category: record.category,
+        amount: record.amount,
+        deletedAt: new Date().toISOString()
+      });
+      localStorage.setItem('pendingDeletes', JSON.stringify(pendingDeletes));
       
       // Log the activity before deleting
       addLocalLog('DELETE', currentTab, `${record.category} - ₱${record.amount.toLocaleString()} ${record.remarks ? '(' + record.remarks + ')' : ''}`);
@@ -4301,9 +4386,179 @@
       // Remove from local records
       records[currentTab] = records[currentTab].filter(r => String(r.id) !== String(deleteTargetId));
       saveToStorage();
+      
+      // Mark as pending sync
+      markPendingSync();
+      
       updateUI();
       closeDeleteModal();
-      showToast('Record deleted and logged', 'success');
+      showToast('Record deleted! Click Sync to update cloud.', 'success');
+    }
+
+    // ==========================================
+    // MANUAL SYNC SYSTEM
+    // ==========================================
+
+    // Mark that there are pending changes to sync
+    function markPendingSync() {
+      const pendingCount = getPendingSyncCount();
+      updateSyncBadge(pendingCount);
+      
+      // Update status
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      
+      if (pendingCount > 0) {
+        dot.className = 'status-dot pending';
+        text.textContent = `${pendingCount} pending`;
+        document.getElementById('syncBtn').classList.add('has-pending');
+      }
+    }
+
+    // Get count of pending sync items
+    function getPendingSyncCount() {
+      // Count unsynced records
+      const unsyncedIn = records.in.filter(r => r.synced === false).length;
+      const unsyncedOut = records.out.filter(r => r.synced === false).length;
+      
+      // Count pending deletes
+      const pendingDeletes = JSON.parse(localStorage.getItem('pendingDeletes') || '[]');
+      
+      return unsyncedIn + unsyncedOut + pendingDeletes.length;
+    }
+
+    // Update sync badge
+    function updateSyncBadge(count) {
+      const badge = document.getElementById('syncBadge');
+      const btn = document.getElementById('syncBtn');
+      
+      if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+        btn.classList.add('has-pending');
+      } else {
+        badge.style.display = 'none';
+        btn.classList.remove('has-pending');
+      }
+    }
+
+    // Manual sync - triggered by user clicking Sync button
+    async function manualSync() {
+      if (!googleSheetsUrl) {
+        showToast('⚠️ Connect to Google Sheets first (Settings)', 'warning');
+        return;
+      }
+      
+      if (!navigator.onLine) {
+        showToast('📴 No internet connection', 'error');
+        return;
+      }
+      
+      const syncBtn = document.getElementById('syncBtn');
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      
+      syncBtn.classList.add('syncing');
+      syncBtn.disabled = true;
+      dot.className = 'status-dot syncing';
+      text.textContent = 'Syncing...';
+      
+      let syncedCount = 0;
+      let errorCount = 0;
+      
+      try {
+        // 1. Sync pending deletes first
+        const pendingDeletes = JSON.parse(localStorage.getItem('pendingDeletes') || '[]');
+        for (const del of pendingDeletes) {
+          try {
+            text.textContent = `Deleting ${del.category}...`;
+            await sendToGoogleSheets('DELETE', { id: del.id, type: del.type });
+            syncedCount++;
+          } catch (err) {
+            console.error('Delete sync error:', err);
+            errorCount++;
+          }
+        }
+        // Clear pending deletes after sync
+        localStorage.setItem('pendingDeletes', '[]');
+        
+        // 2. Sync unsynced IN records
+        for (let i = 0; i < records.in.length; i++) {
+          if (records.in[i].synced === false) {
+            try {
+              text.textContent = `Syncing IN: ${records.in[i].category}...`;
+              await sendToGoogleSheets('ADD', { ...records.in[i], type: 'in' });
+              records.in[i].synced = true;
+              syncedCount++;
+            } catch (err) {
+              console.error('IN sync error:', err);
+              errorCount++;
+            }
+          }
+        }
+        
+        // 3. Sync unsynced OUT records
+        for (let i = 0; i < records.out.length; i++) {
+          if (records.out[i].synced === false) {
+            try {
+              text.textContent = `Syncing OUT: ${records.out[i].category}...`;
+              await sendToGoogleSheets('ADD', { ...records.out[i], type: 'out' });
+              records.out[i].synced = true;
+              syncedCount++;
+            } catch (err) {
+              console.error('OUT sync error:', err);
+              errorCount++;
+            }
+          }
+        }
+        
+        // Save updated sync status
+        saveToStorage();
+        
+        // 4. Pull latest from Google Sheets
+        text.textContent = 'Fetching latest...';
+        await syncFromGoogleSheets();
+        
+        // Update UI
+        updateSyncBadge(0);
+        dot.className = 'status-dot';
+        
+        if (errorCount > 0) {
+          text.textContent = `Synced with ${errorCount} errors`;
+          showToast(`⚠️ Synced ${syncedCount} items, ${errorCount} failed`, 'warning');
+        } else if (syncedCount > 0) {
+          text.textContent = '✓ All synced';
+          showToast(`✅ Synced ${syncedCount} items successfully!`, 'success');
+        } else {
+          text.textContent = '✓ Up to date';
+          showToast('✅ Already up to date!', 'success');
+        }
+        
+        // Log the sync
+        addLocalLog('SYNC', 'ALL', `Synced ${syncedCount} items`);
+        
+      } catch (err) {
+        console.error('Manual sync error:', err);
+        dot.className = 'status-dot offline';
+        text.textContent = 'Sync failed';
+        showToast('❌ Sync failed: ' + err.message, 'error');
+      } finally {
+        syncBtn.classList.remove('syncing');
+        syncBtn.disabled = false;
+      }
+    }
+
+    // Check for pending sync on load
+    function checkPendingSync() {
+      const count = getPendingSyncCount();
+      updateSyncBadge(count);
+      
+      if (count > 0) {
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        dot.className = 'status-dot pending';
+        text.textContent = `${count} pending`;
+      }
     }
 
     // ==========================================
@@ -4700,7 +4955,9 @@
         'Cashout': 'cat-cashout',
         'Expenses': 'cat-expenses',
         'Savings': 'cat-savings',
-        'Salary': 'cat-salary'
+        'Salary': 'cat-salary',
+        'Chips Refill': 'cat-chips',
+        'Agent Comms': 'cat-agent'
       };
       return classes[cat] || '';
     }
