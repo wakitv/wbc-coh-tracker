@@ -887,6 +887,12 @@
       color: var(--bg-primary);
     }
 
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .edit-btn,
     .delete-btn {
       width: 32px;
       height: 32px;
@@ -899,6 +905,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    .edit-btn:hover {
+      background: rgba(77, 159, 255, 0.15);
+      color: var(--accent-blue);
     }
 
     .delete-btn:hover {
@@ -983,6 +994,73 @@
       font-size: 13px;
       line-height: 1.6;
       margin-bottom: 16px;
+    }
+
+    /* Edit Modal Styles */
+    .edit-modal {
+      max-width: 500px;
+    }
+
+    .edit-modal .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .edit-modal .form-group {
+      margin-bottom: 14px;
+    }
+
+    .edit-modal label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .edit-modal input,
+    .edit-modal select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .edit-modal input:focus,
+    .edit-modal select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(77, 159, 255, 0.15);
+    }
+
+    .edit-modal .amount-input {
+      position: relative;
+    }
+
+    .edit-modal .amount-input .currency-symbol {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .edit-modal .amount-input input {
+      padding-left: 30px;
+    }
+
+    .edit-modal.out-mode .modal-title .icon {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+    }
+
+    .edit-modal.in-mode .modal-title .icon {
+      background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
     }
 
     .code-block {
@@ -2133,6 +2211,77 @@
     </div>
   </div>
 
+  <!-- Edit Entry Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal edit-modal">
+      <div class="modal-title" id="editModalTitle">
+        <div class="icon">✏️</div>
+        <span>Edit Entry</span>
+      </div>
+      
+      <form id="editForm" onsubmit="saveEdit(event)">
+        <input type="hidden" id="editId">
+        <input type="hidden" id="editType">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="editDate" required>
+          </div>
+          <div class="form-group">
+            <label>Time</label>
+            <input type="time" id="editTime" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Shift</label>
+            <select id="editShift" required>
+              <option value="4AM-12NN">4AM-12NN</option>
+              <option value="12NN-8PM">12NN-8PM</option>
+              <option value="8PM-4AM">8PM-4AM</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="editCategory" required>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Remarks</label>
+          <input type="text" id="editRemarks" placeholder="Enter remarks">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount</label>
+            <div class="amount-input">
+              <span class="currency-symbol">₱</span>
+              <input type="number" id="editAmount" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Bank Fee</label>
+            <div class="amount-input">
+              <span class="currency-symbol">₱</span>
+              <input type="number" id="editFee" step="0.01" min="0" placeholder="0.00" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="setup-btn" id="editSaveBtn" style="background: var(--accent-in); flex: 1;">
+            💾 Save Changes
+          </button>
+          <button type="button" class="modal-close" onclick="closeEditModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast">
     <span id="toastMessage">Entry added successfully!</span>
@@ -2979,7 +3128,10 @@
             <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
             <td>${receiptHtml}</td>
             <td>
-              <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+              <div class="action-buttons">
+                <button class="edit-btn" onclick="openEditModal('${record.id}')" title="Edit">✏️</button>
+                <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+              </div>
             </td>
           </tr>
         `;
@@ -3449,6 +3601,132 @@
       }
     }
 
+    // Edit Functions
+    let editTargetId = null;
+    let editTargetType = null;
+
+    function openEditModal(id) {
+      // Find the record
+      let record = records.in.find(r => String(r.id) === String(id));
+      let type = 'in';
+      
+      if (!record) {
+        record = records.out.find(r => String(r.id) === String(id));
+        type = 'out';
+      }
+      
+      if (!record) {
+        showToast('Record not found', 'error');
+        return;
+      }
+      
+      editTargetId = String(id);
+      editTargetType = type;
+      
+      // Populate form
+      document.getElementById('editId').value = record.id;
+      document.getElementById('editType').value = type;
+      document.getElementById('editDate').value = record.date || '';
+      document.getElementById('editTime').value = record.time || '';
+      document.getElementById('editShift').value = record.shift || '4AM-12NN';
+      document.getElementById('editRemarks').value = record.remarks || '';
+      document.getElementById('editAmount').value = record.amount || '';
+      document.getElementById('editFee').value = record.fee || 0;
+      
+      // Update category options based on type
+      const categorySelect = document.getElementById('editCategory');
+      const cats = type === 'in' 
+        ? ['Remittance', 'Additional Funds'] 
+        : ['Cashout', 'Expenses', 'Savings', 'Salary'];
+      
+      categorySelect.innerHTML = cats.map(cat => 
+        `<option value="${cat}" ${record.category === cat ? 'selected' : ''}>${getCategoryIcon(cat)} ${cat}</option>`
+      ).join('');
+      
+      // Update modal styling based on type
+      const modal = document.querySelector('.edit-modal');
+      const modalTitle = document.getElementById('editModalTitle');
+      const saveBtn = document.getElementById('editSaveBtn');
+      
+      modal.classList.remove('in-mode', 'out-mode');
+      modal.classList.add(type + '-mode');
+      
+      if (type === 'in') {
+        modalTitle.innerHTML = '<div class="icon">✏️</div><span>Edit Fund In Entry</span>';
+        saveBtn.style.background = 'var(--accent-in)';
+      } else {
+        modalTitle.innerHTML = '<div class="icon">✏️</div><span>Edit Fund Out Entry</span>';
+        saveBtn.style.background = 'var(--accent-out)';
+      }
+      
+      // Show modal
+      document.getElementById('editModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+      editTargetId = null;
+      editTargetType = null;
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    async function saveEdit(event) {
+      event.preventDefault();
+      
+      if (!editTargetId || !editTargetType) {
+        showToast('No record selected', 'error');
+        return;
+      }
+      
+      const saveBtn = document.getElementById('editSaveBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<div class="spinner"></div> Saving...';
+      
+      try {
+        // Find the record index
+        const recordIndex = records[editTargetType].findIndex(r => String(r.id) === String(editTargetId));
+        
+        if (recordIndex === -1) {
+          throw new Error('Record not found');
+        }
+        
+        // Get old record for logging
+        const oldRecord = { ...records[editTargetType][recordIndex] };
+        
+        // Update record with new values
+        const updatedRecord = {
+          ...oldRecord,
+          date: document.getElementById('editDate').value,
+          time: document.getElementById('editTime').value,
+          shift: document.getElementById('editShift').value,
+          category: document.getElementById('editCategory').value,
+          remarks: document.getElementById('editRemarks').value,
+          amount: parseFloat(document.getElementById('editAmount').value) || 0,
+          fee: parseFloat(document.getElementById('editFee').value) || 0,
+          type: editTargetType
+        };
+        
+        // Update local records
+        records[editTargetType][recordIndex] = updatedRecord;
+        saveToStorage();
+        
+        // Send update to Google Sheets
+        if (googleSheetsUrl) {
+          await sendToGoogleSheets('EDIT', updatedRecord);
+        }
+        
+        updateUI();
+        closeEditModal();
+        showToast('Entry updated successfully!', 'success');
+        
+      } catch (err) {
+        console.error('Edit error:', err);
+        showToast('Error updating entry', 'error');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Save Changes';
+      }
+    }
+
     // Delete
     function promptDelete(id) {
       deleteTargetId = String(id);
@@ -3591,7 +3869,10 @@
             <td class="amount-cell" style="color: var(--text-secondary)">${formatCurrency(record.fee)}</td>
             <td>${receiptHtml}</td>
             <td>
-              <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+              <div class="action-buttons">
+                <button class="edit-btn" onclick="openEditModal('${record.id}')" title="Edit">✏️</button>
+                <button class="delete-btn" onclick="promptDelete('${record.id}')" title="Delete">🗑️</button>
+              </div>
             </td>
           </tr>
         `;
@@ -3885,6 +4166,10 @@
 
     document.getElementById('deleteModal').addEventListener('click', (e) => {
       if (e.target.id === 'deleteModal') closeDeleteModal();
+    });
+
+    document.getElementById('editModal').addEventListener('click', (e) => {
+      if (e.target.id === 'editModal') closeEditModal();
     });
 
     // Service Worker Registration with update handling
