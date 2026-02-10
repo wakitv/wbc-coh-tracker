@@ -1063,6 +1063,197 @@
       background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
     }
 
+    /* Edit Photo Area */
+    .edit-photo-area {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--bg-elevated);
+    }
+
+    .edit-photo-preview {
+      position: relative;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .edit-photo-preview.has-photo {
+      display: block;
+    }
+
+    .edit-photo-preview img {
+      width: 100%;
+      max-height: 150px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: var(--bg-primary);
+    }
+
+    .edit-photo-remove {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255, 107, 107, 0.9);
+      border: none;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .edit-photo-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .edit-photo-empty.hidden {
+      display: none;
+    }
+
+    .edit-photo-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .edit-photo-actions .photo-btn {
+      flex: 1;
+      justify-content: center;
+    }
+
+    .edit-photo-area.paste-ready {
+      border-color: var(--accent-blue);
+      background: rgba(77, 159, 255, 0.1);
+    }
+
+    /* Logs Modal Styles */
+    .logs-modal {
+      max-width: 600px;
+    }
+
+    .logs-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .logs-tab {
+      flex: 1;
+      padding: 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .logs-tab.active {
+      background: var(--accent-purple);
+      border-color: var(--accent-purple);
+      color: white;
+    }
+
+    .logs-container {
+      max-height: 400px;
+      overflow-y: auto;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .logs-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .logs-loading .spinner {
+      margin: 0 auto 10px;
+    }
+
+    .log-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-card);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--border);
+    }
+
+    .log-item.add {
+      border-left-color: var(--accent-in);
+    }
+
+    .log-item.edit {
+      border-left-color: var(--accent-blue);
+    }
+
+    .log-item.delete {
+      border-left-color: var(--accent-out);
+    }
+
+    .log-item.sync {
+      border-left-color: var(--accent-yellow);
+    }
+
+    .log-icon {
+      font-size: 20px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-elevated);
+      border-radius: 8px;
+    }
+
+    .log-content {
+      flex: 1;
+    }
+
+    .log-action {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .log-details {
+      font-size: 11px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .log-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .logs-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    .logs-empty .icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
     .code-block {
       background: var(--bg-primary);
       border: 1px solid var(--border);
@@ -1782,6 +1973,9 @@
         <button class="setup-btn" onclick="syncFromGoogleSheets()" style="background: var(--accent-blue);" id="syncBtn">
           🔄 Sync
         </button>
+        <button class="setup-btn" onclick="showLogsModal()" style="background: var(--accent-purple);">
+          📋 Logs
+        </button>
         <button class="setup-btn" onclick="showGoogleSheetsModal()">
           ⚙️ Settings
         </button>
@@ -2272,6 +2466,27 @@
           </div>
         </div>
 
+        <!-- Photo Edit Section -->
+        <div class="form-group">
+          <label>Receipt Photo</label>
+          <div class="edit-photo-area" id="editPhotoArea">
+            <div id="editPhotoPreview" class="edit-photo-preview">
+              <img id="editPhotoImg" src="" alt="Receipt">
+              <button type="button" class="edit-photo-remove" onclick="removeEditPhoto()">✕</button>
+            </div>
+            <div id="editPhotoEmpty" class="edit-photo-empty">
+              <span>📷 No photo</span>
+            </div>
+            <div class="edit-photo-actions">
+              <button type="button" class="photo-btn camera-btn" onclick="openEditCamera()">📸 Camera</button>
+              <button type="button" class="photo-btn" onclick="openEditGallery()">🖼️ Gallery</button>
+              <button type="button" class="photo-btn paste-btn" onclick="focusEditForPaste()">📋 Paste</button>
+            </div>
+          </div>
+          <input type="file" id="editCameraInput" class="hidden-input" accept="image/*" capture="environment" onchange="handleEditPhotoSelect(event)">
+          <input type="file" id="editGalleryInput" class="hidden-input" accept="image/*" onchange="handleEditPhotoSelect(event)">
+        </div>
+
         <div style="display: flex; gap: 10px; margin-top: 20px;">
           <button type="submit" class="setup-btn" id="editSaveBtn" style="background: var(--accent-in); flex: 1;">
             💾 Save Changes
@@ -2279,6 +2494,33 @@
           <button type="button" class="modal-close" onclick="closeEditModal()">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Logs History Modal -->
+  <div class="modal-overlay" id="logsModal">
+    <div class="modal logs-modal">
+      <div class="modal-title">
+        <div class="icon" style="background: linear-gradient(135deg, #9d4edd 0%, #7b2cbf 100%);">📋</div>
+        <span>Activity Logs</span>
+      </div>
+      
+      <div class="logs-tabs">
+        <button class="logs-tab active" onclick="switchLogsTab('local')">📱 Local Logs</button>
+        <button class="logs-tab" onclick="switchLogsTab('cloud')">☁️ Cloud Logs</button>
+      </div>
+      
+      <div class="logs-container" id="logsContainer">
+        <div class="logs-loading">
+          <div class="spinner"></div>
+          Loading logs...
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button class="setup-btn" style="background: var(--accent-out);" onclick="clearLocalLogs()">🗑️ Clear Local Logs</button>
+        <button class="modal-close" onclick="closeLogsModal()">Close</button>
+      </div>
     </div>
   </div>
 
@@ -2304,6 +2546,8 @@
     let googleSheetsUrl = localStorage.getItem('googleSheetsUrl') || '';
     let currentPhotos = []; // Changed to array for multiple photos
     let deleteTargetId = null;
+    let localLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
+    let currentLogsTab = 'local';
     let deferredPrompt = null;
     
     // Chart instances
@@ -2409,6 +2653,10 @@
         statusText.textContent = 'Synced ✓';
         
         const totalRecords = records.in.length + records.out.length;
+        
+        // Log the sync activity
+        addLocalLog('SYNC', 'ALL', `Synced ${totalRecords} records (IN: ${records.in.length}, OUT: ${records.out.length})`);
+        
         showToast(`Synced ${totalRecords} records from Google Sheets`, 'success');
         
         console.log('Sync complete - IN:', records.in.length, 'OUT:', records.out.length);
@@ -3276,8 +3524,13 @@
       }, 5000);
     }
 
-    // Handle paste event for images
+    // Handle paste event for images (main form)
     document.addEventListener('paste', async (e) => {
+      // Skip if edit modal is open - let edit modal handler take it
+      if (document.getElementById('editModal').classList.contains('active')) {
+        return;
+      }
+      
       const items = e.clipboardData?.items;
       if (!items) return;
       
@@ -3590,6 +3843,9 @@
         removePhoto();
         setDefaultDateTime();
         
+        // Log the activity
+        addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()} ${entry.remarks ? '(' + entry.remarks + ')' : ''}`);
+        
         showToast(`Entry added with ${entry.receiptCount} photo(s)!`, 'success');
         
       } catch (err) {
@@ -3604,15 +3860,19 @@
     // Edit Functions
     let editTargetId = null;
     let editTargetType = null;
+    let editPhotoBase64 = null;
+    let editPhotoChanged = false;
 
     function openEditModal(id) {
-      // Find the record
-      let record = records.in.find(r => String(r.id) === String(id));
-      let type = 'in';
+      // Find the record - search in current tab first, then other tab
+      let record = records[currentTab].find(r => String(r.id) === String(id));
+      let type = currentTab;
       
       if (!record) {
-        record = records.out.find(r => String(r.id) === String(id));
-        type = 'out';
+        // Search in other tab
+        const otherTab = currentTab === 'in' ? 'out' : 'in';
+        record = records[otherTab].find(r => String(r.id) === String(id));
+        type = otherTab;
       }
       
       if (!record) {
@@ -3620,8 +3880,12 @@
         return;
       }
       
+      console.log('Opening edit modal for record:', record);
+      
       editTargetId = String(id);
       editTargetType = type;
+      editPhotoBase64 = record.receipt || null;
+      editPhotoChanged = false;
       
       // Populate form
       document.getElementById('editId').value = record.id;
@@ -3642,6 +3906,9 @@
       categorySelect.innerHTML = cats.map(cat => 
         `<option value="${cat}" ${record.category === cat ? 'selected' : ''}>${getCategoryIcon(cat)} ${cat}</option>`
       ).join('');
+      
+      // Update photo preview
+      updateEditPhotoPreview();
       
       // Update modal styling based on type
       const modal = document.querySelector('.edit-modal');
@@ -3666,8 +3933,121 @@
     function closeEditModal() {
       editTargetId = null;
       editTargetType = null;
+      editPhotoBase64 = null;
+      editPhotoChanged = false;
       document.getElementById('editModal').classList.remove('active');
+      document.getElementById('editPhotoArea').classList.remove('paste-ready');
     }
+
+    function updateEditPhotoPreview() {
+      const preview = document.getElementById('editPhotoPreview');
+      const img = document.getElementById('editPhotoImg');
+      const empty = document.getElementById('editPhotoEmpty');
+      
+      if (editPhotoBase64 && editPhotoBase64.startsWith('data:image')) {
+        img.src = editPhotoBase64;
+        preview.classList.add('has-photo');
+        empty.classList.add('hidden');
+      } else if (editPhotoBase64 && editPhotoBase64.includes('drive.google.com')) {
+        // Google Drive link - show as link
+        img.src = '';
+        preview.classList.remove('has-photo');
+        empty.innerHTML = `<a href="${editPhotoBase64}" target="_blank" class="receipt-link">📷 View on Drive</a>`;
+        empty.classList.remove('hidden');
+      } else {
+        img.src = '';
+        preview.classList.remove('has-photo');
+        empty.innerHTML = '<span>📷 No photo</span>';
+        empty.classList.remove('hidden');
+      }
+    }
+
+    function openEditCamera() {
+      document.getElementById('editCameraInput').click();
+    }
+
+    function openEditGallery() {
+      document.getElementById('editGalleryInput').click();
+    }
+
+    function focusEditForPaste() {
+      const area = document.getElementById('editPhotoArea');
+      area.classList.add('paste-ready');
+      showToast('Ready! Press Ctrl+V to paste image', 'success');
+      
+      setTimeout(() => {
+        area.classList.remove('paste-ready');
+      }, 5000);
+    }
+
+    async function handleEditPhotoSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        showToast('Processing photo...', 'warning');
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const compressed = await compressImage(e.target.result, 800, 0.6);
+            editPhotoBase64 = compressed;
+            editPhotoChanged = true;
+            updateEditPhotoPreview();
+            showToast('Photo updated!', 'success');
+          } catch (err) {
+            editPhotoBase64 = e.target.result;
+            editPhotoChanged = true;
+            updateEditPhotoPreview();
+            showToast('Photo added', 'warning');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      event.target.value = '';
+    }
+
+    function removeEditPhoto() {
+      editPhotoBase64 = null;
+      editPhotoChanged = true;
+      updateEditPhotoPreview();
+      showToast('Photo removed', 'warning');
+    }
+
+    // Listen for paste in edit modal
+    document.addEventListener('paste', async (e) => {
+      // Check if edit modal is open
+      if (!document.getElementById('editModal').classList.contains('active')) {
+        return;
+      }
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            showToast('Processing pasted image...', 'warning');
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+              try {
+                const compressed = await compressImage(ev.target.result, 800, 0.6);
+                editPhotoBase64 = compressed;
+                editPhotoChanged = true;
+                updateEditPhotoPreview();
+                showToast('Photo pasted!', 'success');
+              } catch (err) {
+                editPhotoBase64 = ev.target.result;
+                editPhotoChanged = true;
+                updateEditPhotoPreview();
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+          break;
+        }
+      }
+    });
 
     async function saveEdit(event) {
       event.preventDefault();
@@ -3686,15 +4066,17 @@
         const recordIndex = records[editTargetType].findIndex(r => String(r.id) === String(editTargetId));
         
         if (recordIndex === -1) {
-          throw new Error('Record not found');
+          throw new Error('Record not found in ' + editTargetType);
         }
         
-        // Get old record for logging
+        console.log('Updating record at index:', recordIndex, 'in', editTargetType);
+        
+        // Get old record for reference
         const oldRecord = { ...records[editTargetType][recordIndex] };
         
-        // Update record with new values
+        // Build updated record with new values
         const updatedRecord = {
-          ...oldRecord,
+          id: oldRecord.id,
           date: document.getElementById('editDate').value,
           time: document.getElementById('editTime').value,
           shift: document.getElementById('editShift').value,
@@ -3702,25 +4084,39 @@
           remarks: document.getElementById('editRemarks').value,
           amount: parseFloat(document.getElementById('editAmount').value) || 0,
           fee: parseFloat(document.getElementById('editFee').value) || 0,
-          type: editTargetType
+          type: editTargetType,
+          // Keep existing receipt URL if not changed, or use new photo
+          receipt: editPhotoChanged ? editPhotoBase64 : oldRecord.receipt,
+          receiptUrl: editPhotoChanged ? null : oldRecord.receiptUrl,
+          receipts: editPhotoChanged ? (editPhotoBase64 ? [editPhotoBase64] : []) : oldRecord.receipts,
+          receiptCount: editPhotoChanged ? (editPhotoBase64 ? 1 : 0) : oldRecord.receiptCount,
+          rowNumber: oldRecord.rowNumber
         };
+        
+        console.log('Updated record:', updatedRecord);
         
         // Update local records
         records[editTargetType][recordIndex] = updatedRecord;
         saveToStorage();
         
-        // Send update to Google Sheets
+        // Send update to Google Sheets if connected
         if (googleSheetsUrl) {
+          saveBtn.innerHTML = '<div class="spinner"></div> Syncing...';
           await sendToGoogleSheets('EDIT', updatedRecord);
         }
         
+        // Log the activity
+        addLocalLog('EDIT', editTargetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()} ${updatedRecord.remarks ? '(' + updatedRecord.remarks + ')' : ''}`);
+        
+        // Refresh UI
+        filterRecords();
         updateUI();
         closeEditModal();
         showToast('Entry updated successfully!', 'success');
         
       } catch (err) {
         console.error('Edit error:', err);
-        showToast('Error updating entry', 'error');
+        showToast('Error: ' + err.message, 'error');
       } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '💾 Save Changes';
@@ -3758,12 +4154,221 @@
         await sendToGoogleSheets('DELETE', record);
       }
       
+      // Log the activity before deleting
+      addLocalLog('DELETE', currentTab, `${record.category} - ₱${record.amount.toLocaleString()} ${record.remarks ? '(' + record.remarks + ')' : ''}`);
+      
       // Remove from local records
       records[currentTab] = records[currentTab].filter(r => String(r.id) !== String(deleteTargetId));
       saveToStorage();
       updateUI();
       closeDeleteModal();
       showToast('Record deleted and logged', 'success');
+    }
+
+    // ==========================================
+    // LOGS SYSTEM
+    // ==========================================
+
+    function addLocalLog(action, type, details) {
+      const log = {
+        id: Date.now(),
+        action: action,
+        type: type,
+        details: details,
+        timestamp: new Date().toISOString()
+      };
+      
+      localLogs.unshift(log);
+      
+      // Keep only last 100 logs
+      if (localLogs.length > 100) {
+        localLogs = localLogs.slice(0, 100);
+      }
+      
+      localStorage.setItem('activityLogs', JSON.stringify(localLogs));
+      console.log('Log added:', log);
+    }
+
+    function showLogsModal() {
+      document.getElementById('logsModal').classList.add('active');
+      switchLogsTab('local');
+    }
+
+    function closeLogsModal() {
+      document.getElementById('logsModal').classList.remove('active');
+    }
+
+    function switchLogsTab(tab) {
+      currentLogsTab = tab;
+      
+      // Update tab buttons
+      document.querySelectorAll('.logs-tab').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.logs-tab:${tab === 'local' ? 'first-child' : 'last-child'}`).classList.add('active');
+      
+      if (tab === 'local') {
+        displayLocalLogs();
+      } else {
+        fetchCloudLogs();
+      }
+    }
+
+    function displayLocalLogs() {
+      const container = document.getElementById('logsContainer');
+      
+      if (localLogs.length === 0) {
+        container.innerHTML = `
+          <div class="logs-empty">
+            <div class="icon">📋</div>
+            <p>No local activity logs yet</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = localLogs.map(log => {
+        const icon = getLogIcon(log.action);
+        const actionClass = log.action.toLowerCase();
+        const time = formatLogTime(log.timestamp);
+        
+        return `
+          <div class="log-item ${actionClass}">
+            <div class="log-icon">${icon}</div>
+            <div class="log-content">
+              <div class="log-action">${log.action} - ${log.type?.toUpperCase() || 'N/A'}</div>
+              <div class="log-details">${log.details || ''}</div>
+              <div class="log-time">${time}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function fetchCloudLogs() {
+      const container = document.getElementById('logsContainer');
+      
+      if (!googleSheetsUrl) {
+        container.innerHTML = `
+          <div class="logs-empty">
+            <div class="icon">☁️</div>
+            <p>Connect to Google Sheets to view cloud logs</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="logs-loading">
+          <div class="spinner"></div>
+          Loading cloud logs...
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(`${googleSheetsUrl}?action=logs&limit=50`);
+        const data = await response.json();
+        
+        if (data.success && data.logs && data.logs.length > 0) {
+          container.innerHTML = data.logs.map(log => {
+            const icon = getLogIcon(log.action);
+            const actionClass = (log.action || '').toLowerCase();
+            const time = formatLogTime(log.timestamp);
+            
+            let details = '';
+            try {
+              const logData = typeof log.data === 'string' ? JSON.parse(log.data) : log.data;
+              if (logData) {
+                details = `${logData.category || ''} - ₱${(logData.amount || 0).toLocaleString()}`;
+                if (logData.remarks) details += ` (${logData.remarks})`;
+              }
+            } catch (e) {
+              details = log.row_id || '';
+            }
+            
+            return `
+              <div class="log-item ${actionClass}">
+                <div class="log-icon">${icon}</div>
+                <div class="log-content">
+                  <div class="log-action">${log.action || 'UNKNOWN'} - ${(log.type || 'N/A').toUpperCase()}</div>
+                  <div class="log-details">${details}</div>
+                  <div class="log-time">${time}</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = `
+            <div class="logs-empty">
+              <div class="icon">☁️</div>
+              <p>No cloud logs found</p>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Error fetching cloud logs:', err);
+        container.innerHTML = `
+          <div class="logs-empty">
+            <div class="icon">⚠️</div>
+            <p>Error loading cloud logs</p>
+          </div>
+        `;
+      }
+    }
+
+    function getLogIcon(action) {
+      const icons = {
+        'ADD': '➕',
+        'EDIT': '✏️',
+        'UPDATE': '✏️',
+        'DELETE': '🗑️',
+        'SYNC': '🔄',
+        'LOGIN': '🔐',
+        'EXPORT': '📤'
+      };
+      return icons[action?.toUpperCase()] || '📋';
+    }
+
+    function formatLogTime(timestamp) {
+      if (!timestamp) return '';
+      
+      try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        
+        // Less than 1 minute
+        if (diff < 60000) return 'Just now';
+        
+        // Less than 1 hour
+        if (diff < 3600000) {
+          const mins = Math.floor(diff / 60000);
+          return `${mins} min${mins > 1 ? 's' : ''} ago`;
+        }
+        
+        // Less than 24 hours
+        if (diff < 86400000) {
+          const hours = Math.floor(diff / 3600000);
+          return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        }
+        
+        // Format as date
+        return date.toLocaleDateString('en-PH', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return timestamp;
+      }
+    }
+
+    function clearLocalLogs() {
+      if (!confirm('Are you sure you want to clear all local logs?')) return;
+      
+      localLogs = [];
+      localStorage.setItem('activityLogs', JSON.stringify(localLogs));
+      displayLocalLogs();
+      showToast('Local logs cleared', 'success');
     }
 
     // UI Updates
@@ -4062,15 +4667,24 @@
     async function sendToGoogleSheets(action, entry) {
       if (!googleSheetsUrl) return;
       
+      // Skip offline
+      if (!navigator.onLine) {
+        showToast('📴 Offline - Changes saved locally', 'warning');
+        return;
+      }
+      
       const dot = document.getElementById('statusDot');
       dot.className = 'status-dot syncing';
       document.getElementById('statusText').textContent = 'Syncing...';
       
       try {
-        // Compress receipt image if exists
+        // Compress receipt image if exists and is base64
         let compressedReceipt = null;
-        if (entry.receipt && entry.receipt.length > 100) {
+        let hasLocalReceipt = false;
+        
+        if (entry.receipt && entry.receipt.startsWith('data:image') && entry.receipt.length > 100) {
           document.getElementById('statusText').textContent = 'Compressing photo...';
+          hasLocalReceipt = true;
           
           try {
             compressedReceipt = await compressImage(entry.receipt, 600, 0.5);
@@ -4101,13 +4715,13 @@
           remarks: entry.remarks || '',
           amount: entry.amount || 0,
           fee: entry.fee || 0,
-          hasReceipt: !!compressedReceipt,
+          hasReceipt: !!compressedReceipt || hasLocalReceipt,
           receiptBase64: compressedReceipt,
           timestamp: new Date().toISOString()
         };
         
         document.getElementById('statusText').textContent = compressedReceipt ? 'Uploading photo...' : 'Saving...';
-        console.log('Sending to Google Sheets:', action, 'Receipt:', compressedReceipt ? Math.round(compressedReceipt.length / 1024) + 'KB' : 'none');
+        console.log('Sending to Google Sheets:', action, 'Type:', payload.type, 'Receipt:', compressedReceipt ? Math.round(compressedReceipt.length / 1024) + 'KB' : 'none');
         
         // Create AbortController for timeout
         const controller = new AbortController();
@@ -4126,8 +4740,25 @@
         
         clearTimeout(timeoutId);
         
-        dot.className = 'status-dot';
-        document.getElementById('statusText').textContent = 'Saved ✓';
+        // Try to parse response
+        try {
+          const result = await response.json();
+          console.log('Google Sheets response:', result);
+          
+          if (result.success) {
+            dot.className = 'status-dot';
+            document.getElementById('statusText').textContent = '✓ Synced';
+          } else {
+            console.error('Sync error from server:', result.error);
+            dot.className = 'status-dot offline';
+            document.getElementById('statusText').textContent = 'Sync Error';
+          }
+        } catch (parseErr) {
+          // Response might not be JSON, but request was sent
+          dot.className = 'status-dot';
+          document.getElementById('statusText').textContent = '✓ Sent';
+        }
+        
         console.log('Sync completed for:', action);
         
       } catch (err) {
@@ -4170,6 +4801,10 @@
 
     document.getElementById('editModal').addEventListener('click', (e) => {
       if (e.target.id === 'editModal') closeEditModal();
+    });
+
+    document.getElementById('logsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'logsModal') closeLogsModal();
     });
 
     // Service Worker Registration with update handling
