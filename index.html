@@ -1087,23 +1087,80 @@
       object-fit: contain;
       border-radius: 8px;
       background: var(--bg-primary);
+      cursor: pointer;
     }
 
-    .edit-photo-remove {
+    .edit-photo-overlay {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: rgba(255, 107, 107, 0.9);
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+
+    .edit-photo-view,
+    .edit-photo-remove {
+      padding: 6px 12px;
+      border-radius: 6px;
       border: none;
-      color: white;
-      font-size: 14px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 4px;
+    }
+
+    .edit-photo-view {
+      background: rgba(77, 159, 255, 0.9);
+      color: white;
+    }
+
+    .edit-photo-remove {
+      background: rgba(255, 107, 107, 0.9);
+      color: white;
+    }
+
+    /* Drive Link Preview */
+    .edit-photo-drive-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .edit-photo-drive-link .drive-icon {
+      font-size: 24px;
+    }
+
+    .edit-photo-drive-link .drive-text {
+      flex: 1;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .edit-photo-drive-link .drive-view-btn {
+      padding: 6px 12px;
+      background: var(--accent-blue);
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .edit-photo-drive-link .drive-remove-btn {
+      padding: 6px 10px;
+      background: var(--accent-out);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
     }
 
     .edit-photo-empty {
@@ -1120,18 +1177,30 @@
     .edit-photo-actions {
       display: flex;
       gap: 8px;
-      justify-content: center;
-      margin-top: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .edit-photo-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
     }
 
     .edit-photo-actions .photo-btn {
       flex: 1;
       justify-content: center;
+      min-width: 80px;
     }
 
     .edit-photo-area.paste-ready {
       border-color: var(--accent-blue);
       background: rgba(77, 159, 255, 0.1);
+    }
+
+    .edit-photo-area.has-existing-photo {
+      border-color: var(--accent-in);
+      border-style: solid;
     }
 
     /* Logs Modal Styles */
@@ -2470,14 +2539,31 @@
         <div class="form-group">
           <label>Receipt Photo</label>
           <div class="edit-photo-area" id="editPhotoArea">
+            <!-- Current Photo Preview -->
             <div id="editPhotoPreview" class="edit-photo-preview">
               <img id="editPhotoImg" src="" alt="Receipt">
-              <button type="button" class="edit-photo-remove" onclick="removeEditPhoto()">✕</button>
+              <div class="edit-photo-overlay">
+                <button type="button" class="edit-photo-view" onclick="viewEditPhoto()">🔍 View</button>
+                <button type="button" class="edit-photo-remove" onclick="removeEditPhoto()">🗑️ Remove</button>
+              </div>
             </div>
+            
+            <!-- Google Drive Link Preview -->
+            <div id="editPhotoDriveLink" class="edit-photo-drive-link" style="display: none;">
+              <span class="drive-icon">📷</span>
+              <span class="drive-text">Photo saved on Google Drive</span>
+              <a id="editPhotoDriveUrl" href="#" target="_blank" class="drive-view-btn">View Photo</a>
+              <button type="button" class="drive-remove-btn" onclick="removeEditPhoto()">🗑️</button>
+            </div>
+            
+            <!-- No Photo State -->
             <div id="editPhotoEmpty" class="edit-photo-empty">
-              <span>📷 No photo</span>
+              <span>📷 No photo attached</span>
             </div>
+            
+            <!-- Change/Add Photo Actions -->
             <div class="edit-photo-actions">
+              <span class="edit-photo-label" id="editPhotoLabel">Add Photo:</span>
               <button type="button" class="photo-btn camera-btn" onclick="openEditCamera()">📸 Camera</button>
               <button type="button" class="photo-btn" onclick="openEditGallery()">🖼️ Gallery</button>
               <button type="button" class="photo-btn paste-btn" onclick="focusEditForPaste()">📋 Paste</button>
@@ -3861,6 +3947,8 @@
     let editTargetId = null;
     let editTargetType = null;
     let editPhotoBase64 = null;
+    let editOriginalReceipt = null; // Store original receipt (base64 or URL)
+    let editOriginalReceiptUrl = null; // Store original receiptUrl
     let editPhotoChanged = false;
 
     function openEditModal(id) {
@@ -3884,8 +3972,12 @@
       
       editTargetId = String(id);
       editTargetType = type;
+      
+      // Store original receipt info - don't modify unless user changes it
+      editOriginalReceipt = record.receipt || null;
+      editOriginalReceiptUrl = record.receiptUrl || null;
       editPhotoBase64 = record.receipt || null;
-      editPhotoChanged = false;
+      editPhotoChanged = false; // Important: start as false
       
       // Populate form
       document.getElementById('editId').value = record.id;
@@ -3934,31 +4026,57 @@
       editTargetId = null;
       editTargetType = null;
       editPhotoBase64 = null;
+      editOriginalReceipt = null;
+      editOriginalReceiptUrl = null;
       editPhotoChanged = false;
       document.getElementById('editModal').classList.remove('active');
-      document.getElementById('editPhotoArea').classList.remove('paste-ready');
+      document.getElementById('editPhotoArea').classList.remove('paste-ready', 'has-existing-photo');
     }
 
     function updateEditPhotoPreview() {
       const preview = document.getElementById('editPhotoPreview');
       const img = document.getElementById('editPhotoImg');
+      const driveLink = document.getElementById('editPhotoDriveLink');
+      const driveUrl = document.getElementById('editPhotoDriveUrl');
       const empty = document.getElementById('editPhotoEmpty');
+      const label = document.getElementById('editPhotoLabel');
+      const area = document.getElementById('editPhotoArea');
       
-      if (editPhotoBase64 && editPhotoBase64.startsWith('data:image')) {
-        img.src = editPhotoBase64;
+      // Get the current photo - either new one or original
+      const currentPhoto = editPhotoBase64 || editOriginalReceipt || editOriginalReceiptUrl;
+      
+      // Hide all states first
+      preview.classList.remove('has-photo');
+      driveLink.style.display = 'none';
+      empty.classList.add('hidden');
+      area.classList.remove('has-existing-photo');
+      
+      if (currentPhoto && currentPhoto.startsWith('data:image')) {
+        // Base64 image - show preview
+        img.src = currentPhoto;
         preview.classList.add('has-photo');
-        empty.classList.add('hidden');
-      } else if (editPhotoBase64 && editPhotoBase64.includes('drive.google.com')) {
-        // Google Drive link - show as link
-        img.src = '';
-        preview.classList.remove('has-photo');
-        empty.innerHTML = `<a href="${editPhotoBase64}" target="_blank" class="receipt-link">📷 View on Drive</a>`;
-        empty.classList.remove('hidden');
+        area.classList.add('has-existing-photo');
+        label.textContent = 'Change Photo:';
+      } else if (currentPhoto && (currentPhoto.includes('drive.google.com') || currentPhoto.startsWith('https://'))) {
+        // Google Drive or URL link - show link preview
+        driveUrl.href = currentPhoto;
+        driveLink.style.display = 'flex';
+        area.classList.add('has-existing-photo');
+        label.textContent = 'Replace Photo:';
       } else {
-        img.src = '';
-        preview.classList.remove('has-photo');
-        empty.innerHTML = '<span>📷 No photo</span>';
+        // No photo
         empty.classList.remove('hidden');
+        label.textContent = 'Add Photo:';
+      }
+    }
+
+    function viewEditPhoto() {
+      const currentPhoto = editPhotoBase64 || editOriginalReceipt;
+      if (currentPhoto && currentPhoto.startsWith('data:image')) {
+        document.getElementById('modalImage').src = currentPhoto;
+        document.getElementById('imageModal').classList.add('active');
+      } else if (currentPhoto && currentPhoto.includes('http')) {
+        window.open(currentPhoto, '_blank');
       }
     }
 
@@ -3990,12 +4108,12 @@
           try {
             const compressed = await compressImage(e.target.result, 800, 0.6);
             editPhotoBase64 = compressed;
-            editPhotoChanged = true;
+            editPhotoChanged = true; // Mark as changed
             updateEditPhotoPreview();
             showToast('Photo updated!', 'success');
           } catch (err) {
             editPhotoBase64 = e.target.result;
-            editPhotoChanged = true;
+            editPhotoChanged = true; // Mark as changed
             updateEditPhotoPreview();
             showToast('Photo added', 'warning');
           }
@@ -4006,10 +4124,14 @@
     }
 
     function removeEditPhoto() {
-      editPhotoBase64 = null;
-      editPhotoChanged = true;
-      updateEditPhotoPreview();
-      showToast('Photo removed', 'warning');
+      if (confirm('Remove this receipt photo?')) {
+        editPhotoBase64 = null;
+        editOriginalReceipt = null;
+        editOriginalReceiptUrl = null;
+        editPhotoChanged = true; // Mark as changed (photo removed)
+        updateEditPhotoPreview();
+        showToast('Photo removed', 'warning');
+      }
     }
 
     // Listen for paste in edit modal
@@ -4033,7 +4155,7 @@
               try {
                 const compressed = await compressImage(ev.target.result, 800, 0.6);
                 editPhotoBase64 = compressed;
-                editPhotoChanged = true;
+                editPhotoChanged = true; // Mark as changed
                 updateEditPhotoPreview();
                 showToast('Photo pasted!', 'success');
               } catch (err) {
@@ -4070,9 +4192,29 @@
         }
         
         console.log('Updating record at index:', recordIndex, 'in', editTargetType);
+        console.log('Photo changed:', editPhotoChanged);
         
         // Get old record for reference
         const oldRecord = { ...records[editTargetType][recordIndex] };
+        
+        // Determine receipt value
+        let newReceipt, newReceiptUrl, newReceipts, newReceiptCount;
+        
+        if (editPhotoChanged) {
+          // User changed the photo
+          newReceipt = editPhotoBase64 || null;
+          newReceiptUrl = null;
+          newReceipts = editPhotoBase64 ? [editPhotoBase64] : [];
+          newReceiptCount = editPhotoBase64 ? 1 : 0;
+          console.log('Using new photo:', newReceipt ? 'yes' : 'removed');
+        } else {
+          // Keep original photo - no changes
+          newReceipt = oldRecord.receipt || null;
+          newReceiptUrl = oldRecord.receiptUrl || null;
+          newReceipts = oldRecord.receipts || [];
+          newReceiptCount = oldRecord.receiptCount || (newReceipt ? 1 : 0);
+          console.log('Keeping original photo:', newReceipt ? 'yes' : newReceiptUrl ? 'URL' : 'none');
+        }
         
         // Build updated record with new values
         const updatedRecord = {
@@ -4085,11 +4227,10 @@
           amount: parseFloat(document.getElementById('editAmount').value) || 0,
           fee: parseFloat(document.getElementById('editFee').value) || 0,
           type: editTargetType,
-          // Keep existing receipt URL if not changed, or use new photo
-          receipt: editPhotoChanged ? editPhotoBase64 : oldRecord.receipt,
-          receiptUrl: editPhotoChanged ? null : oldRecord.receiptUrl,
-          receipts: editPhotoChanged ? (editPhotoBase64 ? [editPhotoBase64] : []) : oldRecord.receipts,
-          receiptCount: editPhotoChanged ? (editPhotoBase64 ? 1 : 0) : oldRecord.receiptCount,
+          receipt: newReceipt,
+          receiptUrl: newReceiptUrl,
+          receipts: newReceipts,
+          receiptCount: newReceiptCount,
           rowNumber: oldRecord.rowNumber
         };
         
