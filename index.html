@@ -147,15 +147,18 @@
     }
 
     .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: var(--accent-in);
-      animation: pulse 2s infinite;
     }
 
-    .status-dot.offline { background: var(--accent-out); }
-    .status-dot.syncing { background: var(--accent-yellow); animation: pulse 1s infinite; }
+    .status-dot.connected { 
+      background: var(--accent-in); 
+      animation: pulse 2s infinite;
+    }
+    .status-dot.offline { background: var(--accent-out); animation: none; }
+    .status-dot.syncing { background: var(--accent-yellow); animation: pulse 0.5s infinite; }
     .status-dot.pending { background: var(--accent-yellow); animation: pulse 2s infinite; }
 
     @keyframes pulse {
@@ -2573,7 +2576,7 @@
       <div style="text-align: center; font-size: 11px; color: var(--text-muted);">
         <strong>Cash on Hand Tracker</strong> v2.1<br>
         EXTREME WBC © 2026<br>
-        <span id="offlineStatus">🟢 Online</span>
+        <span id="offlineStatus">● Online</span>
       </div>
     </div>
   </div>
@@ -3663,10 +3666,10 @@
       
       if (!navigator.onLine) {
         dot.className = 'status-dot offline';
-        text.textContent = '📴 Offline';
+        text.textContent = 'Offline';
       } else if (googleSheetsUrl) {
-        dot.className = 'status-dot';
-        text.textContent = '🟢 Connected';
+        dot.className = 'status-dot connected';
+        text.textContent = 'Connected';
       } else {
         dot.className = 'status-dot offline';
         text.textContent = 'Local Only';
@@ -5092,10 +5095,10 @@
       const indicator = document.getElementById('offlineStatus');
       if (indicator) {
         if (navigator.onLine) {
-          indicator.innerHTML = '🟢 Online';
+          indicator.innerHTML = '● Online';
           indicator.style.color = 'var(--accent-in)';
         } else {
-          indicator.innerHTML = '🔴 Offline Mode';
+          indicator.innerHTML = '● Offline';
           indicator.style.color = 'var(--accent-out)';
         }
       }
