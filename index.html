@@ -324,6 +324,57 @@
     .form-title.in .icon { background: var(--accent-in-dim); }
     .form-title.out .icon { background: var(--accent-out-dim); }
 
+    /* Collapsible Form */
+    .form-title {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .form-toggle-btn {
+      margin-left: auto;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .form-toggle-btn .toggle-icon {
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    .form-panel.collapsed .form-toggle-btn .toggle-icon {
+      transform: rotate(-90deg);
+    }
+
+    .form-content {
+      overflow: hidden;
+      max-height: 2000px;
+      transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+      opacity: 1;
+    }
+
+    .form-panel.collapsed .form-content {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+    }
+
+    .form-panel.collapsed {
+      padding-bottom: 24px;
+    }
+
+    .form-panel.collapsed .form-title {
+      margin-bottom: 0;
+    }
+
     /* Input focus colors based on mode */
     .form-panel input:focus,
     .form-panel select:focus,
@@ -2315,12 +2366,16 @@
     <!-- Main Content -->
     <div class="main-grid">
       <!-- Form Panel -->
-      <div class="form-panel" id="formPanel">
-        <div class="form-title in" id="formTitle">
+      <div class="form-panel collapsed" id="formPanel">
+        <div class="form-title in" id="formTitle" onclick="toggleFormPanel()">
           <div class="icon">💰</div>
           <span>New Fund In Entry</span>
+          <button type="button" class="form-toggle-btn" id="formToggleBtn">
+            <span class="toggle-icon">▼</span>
+          </button>
         </div>
 
+        <div class="form-content" id="formContent">
         <form id="entryForm" onsubmit="handleSubmit(event)">
           <div class="form-row">
             <div class="form-group">
@@ -2415,6 +2470,7 @@
             <span>➕</span> Add Fund In Entry
           </button>
         </form>
+        </div><!-- End form-content -->
       </div>
 
       <!-- Table Panel -->
@@ -2732,15 +2788,11 @@
       updateUI();
       updateConnectionStatus();
       
-      // Check for pending sync (don't auto-sync)
-      checkPendingSync();
-      
-      // Show reminder if there are pending items
-      const pendingCount = getPendingSyncCount();
-      if (pendingCount > 0 && googleSheetsUrl) {
-        setTimeout(() => {
-          showToast(`📤 ${pendingCount} item(s) pending sync`, 'warning');
-        }, 1000);
+      // Form starts collapsed by default (set in HTML)
+      // Only expand if user explicitly expanded before
+      const formCollapsed = localStorage.getItem('formCollapsed');
+      if (formCollapsed === 'false') {
+        document.getElementById('formPanel').classList.remove('collapsed');
       }
     });
 
@@ -2810,6 +2862,19 @@
         // Records already come sorted from Google Sheets (newest first)
         // Just save to localStorage for offline access
         saveToStorage();
+        
+        // Update filtered records to match
+        filteredRecords.in = [...records.in];
+        filteredRecords.out = [...records.out];
+        
+        // Re-apply any active filters
+        if (document.getElementById('searchInput').value || 
+            document.getElementById('dateFilter').value !== 'all' ||
+            document.getElementById('categoryFilter').value !== 'all' ||
+            document.getElementById('shiftFilter').value !== 'all') {
+          filterRecords();
+        }
+        
         updateUI();
         
         dot.className = 'status-dot';
@@ -2820,9 +2885,9 @@
         // Log the sync activity
         addLocalLog('SYNC', 'ALL', `Synced ${totalRecords} records (IN: ${records.in.length}, OUT: ${records.out.length})`);
         
-        showToast(`Synced ${totalRecords} records from Google Sheets`, 'success');
+        showToast(`✅ Synced ${totalRecords} records from cloud`, 'success');
         
-        console.log('Sync complete - IN:', records.in.length, 'OUT:', records.out.length);
+        console.log('[SYNC] Complete - IN:', records.in.length, 'OUT:', records.out.length);
         
       } catch (err) {
         console.error('Sync error:', err);
@@ -2904,21 +2969,19 @@
       document.getElementById('installBanner').classList.add('show');
     });
 
-    // Auto-sync when page becomes visible (switching back to app)
+    // Note: We don't auto-sync FROM Google Sheets on visibility change
+    // This prevents overwriting local edits. Users can manually sync if needed.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && googleSheetsUrl) {
-        console.log('Page visible, syncing...');
-        syncFromGoogleSheets();
+      if (document.visibilityState === 'visible') {
+        console.log('Page visible');
+        updateConnectionStatus();
       }
     });
 
-    // Also sync when coming back online
+    // When coming back online, just update status - don't auto-sync FROM sheets
     window.addEventListener('online', () => {
       updateConnectionStatus();
-      if (googleSheetsUrl) {
-        showToast('🟢 Back online! Syncing...', 'success');
-        syncFromGoogleSheets();
-      }
+      showToast('🟢 Back online!', 'success');
     });
 
     // Handle going offline
@@ -3565,6 +3628,22 @@
       }
     }
 
+    // Toggle form panel collapse/expand
+    function toggleFormPanel() {
+      const formPanel = document.getElementById('formPanel');
+      formPanel.classList.toggle('collapsed');
+      
+      // Save state to localStorage
+      localStorage.setItem('formCollapsed', formPanel.classList.contains('collapsed'));
+    }
+
+    // Expand form panel (for when user wants to add entry)
+    function expandFormPanel() {
+      const formPanel = document.getElementById('formPanel');
+      formPanel.classList.remove('collapsed');
+      localStorage.setItem('formCollapsed', 'false');
+    }
+
     function setDefaultDateTime() {
       const now = new Date();
       document.getElementById('entryDate').value = now.toISOString().split('T')[0];
@@ -3991,8 +4070,7 @@
           receipt: primaryReceipt,
           receipts: currentPhotos.map(p => p.data), // Store all photos
           receiptCount: currentPhotos.length,
-          type: currentTab,
-          synced: false // Mark as not synced yet
+          type: currentTab
         };
         
         // Save locally first (for offline support)
@@ -4000,8 +4078,11 @@
         saveToStorage();
         updateUI();
         
-        // Mark as pending sync (don't auto-sync)
-        markPendingSync();
+        // Auto-sync to Google Sheets
+        if (googleSheetsUrl && navigator.onLine) {
+          submitBtn.innerHTML = '<div class="spinner"></div> Syncing...';
+          await sendToGoogleSheets('ADD', entry);
+        }
         
         // Reset form
         document.getElementById('entryCategory').value = '';
@@ -4011,10 +4092,14 @@
         removePhoto();
         setDefaultDateTime();
         
+        // Collapse form after successful submission
+        document.getElementById('formPanel').classList.add('collapsed');
+        localStorage.setItem('formCollapsed', 'true');
+        
         // Log the activity
         addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()} ${entry.remarks ? '(' + entry.remarks + ')' : ''}`);
         
-        showToast(`Entry added! Click Sync to upload.`, 'success');
+        showToast(`Entry added successfully!`, 'success');
         
       } catch (err) {
         console.error('Submit error:', err);
@@ -4266,41 +4351,47 @@
       saveBtn.innerHTML = '<div class="spinner"></div> Saving...';
       
       try {
-        // Find the record index
-        const recordIndex = records[editTargetType].findIndex(r => String(r.id) === String(editTargetId));
+        // Find the EXACT record by ID - must match exactly
+        const targetId = String(editTargetId);
+        const targetType = editTargetType;
+        
+        let recordIndex = -1;
+        for (let i = 0; i < records[targetType].length; i++) {
+          if (String(records[targetType][i].id) === targetId) {
+            recordIndex = i;
+            break;
+          }
+        }
         
         if (recordIndex === -1) {
-          throw new Error('Record not found in ' + editTargetType);
+          throw new Error('Record not found. ID: ' + targetId);
         }
         
-        console.log('Updating record at index:', recordIndex, 'in', editTargetType);
-        console.log('Photo changed:', editPhotoChanged);
+        console.log('[EDIT] Found record at index:', recordIndex, 'in', targetType);
+        console.log('[EDIT] Original ID:', records[targetType][recordIndex].id);
         
-        // Get old record for reference
-        const oldRecord = { ...records[editTargetType][recordIndex] };
+        // Get the original record
+        const originalRecord = records[targetType][recordIndex];
         
-        // Determine receipt value
-        let newReceipt, newReceiptUrl, newReceipts, newReceiptCount;
+        // Determine receipt value - only change if user explicitly changed it
+        let finalReceipt = originalRecord.receipt;
+        let finalReceiptUrl = originalRecord.receiptUrl;
+        let finalReceipts = originalRecord.receipts || [];
+        let finalReceiptCount = originalRecord.receiptCount || 0;
         
         if (editPhotoChanged) {
-          // User changed the photo
-          newReceipt = editPhotoBase64 || null;
-          newReceiptUrl = null;
-          newReceipts = editPhotoBase64 ? [editPhotoBase64] : [];
-          newReceiptCount = editPhotoBase64 ? 1 : 0;
-          console.log('Using new photo:', newReceipt ? 'yes' : 'removed');
+          finalReceipt = editPhotoBase64 || null;
+          finalReceiptUrl = null;
+          finalReceipts = editPhotoBase64 ? [editPhotoBase64] : [];
+          finalReceiptCount = editPhotoBase64 ? 1 : 0;
+          console.log('[EDIT] Photo changed:', editPhotoBase64 ? 'new photo' : 'removed');
         } else {
-          // Keep original photo - no changes
-          newReceipt = oldRecord.receipt || null;
-          newReceiptUrl = oldRecord.receiptUrl || null;
-          newReceipts = oldRecord.receipts || [];
-          newReceiptCount = oldRecord.receiptCount || (newReceipt ? 1 : 0);
-          console.log('Keeping original photo:', newReceipt ? 'yes' : newReceiptUrl ? 'URL' : 'none');
+          console.log('[EDIT] Photo unchanged, keeping original');
         }
         
-        // Build updated record with new values
+        // Create updated record - MUST keep the same ID
         const updatedRecord = {
-          id: oldRecord.id,
+          id: originalRecord.id, // CRITICAL: Keep exact same ID
           date: document.getElementById('editDate').value,
           time: document.getElementById('editTime').value,
           shift: document.getElementById('editShift').value,
@@ -4308,35 +4399,55 @@
           remarks: document.getElementById('editRemarks').value,
           amount: parseFloat(document.getElementById('editAmount').value) || 0,
           fee: parseFloat(document.getElementById('editFee').value) || 0,
-          type: editTargetType,
-          receipt: newReceipt,
-          receiptUrl: newReceiptUrl,
-          receipts: newReceipts,
-          receiptCount: newReceiptCount,
-          rowNumber: oldRecord.rowNumber,
-          synced: false // Mark as not synced
+          type: targetType,
+          receipt: finalReceipt,
+          receiptUrl: finalReceiptUrl,
+          receipts: finalReceipts,
+          receiptCount: finalReceiptCount,
+          rowNumber: originalRecord.rowNumber
         };
         
-        console.log('Updated record:', updatedRecord);
+        console.log('[EDIT] Updated record ID:', updatedRecord.id);
         
-        // Update local records
-        records[editTargetType][recordIndex] = updatedRecord;
+        // IMPORTANT: Directly replace at the specific index only
+        records[targetType][recordIndex] = updatedRecord;
+        
+        // Save to localStorage
         saveToStorage();
         
-        // Mark as pending sync (don't auto-sync)
-        markPendingSync();
+        // Sync to Google Sheets if online
+        if (googleSheetsUrl && navigator.onLine) {
+          saveBtn.innerHTML = '<div class="spinner"></div> Syncing to cloud...';
+          
+          try {
+            const syncResult = await sendToGoogleSheets('EDIT', updatedRecord);
+            console.log('[EDIT] Sync result:', syncResult);
+          } catch (syncErr) {
+            console.error('[EDIT] Sync error:', syncErr);
+            // Don't fail the edit - local is already saved
+            showToast('Saved locally. Cloud sync may have failed.', 'warning');
+          }
+        }
         
         // Log the activity
-        addLocalLog('EDIT', editTargetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()} ${updatedRecord.remarks ? '(' + updatedRecord.remarks + ')' : ''}`);
+        addLocalLog('EDIT', targetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()}`);
         
-        // Refresh UI
-        filterRecords();
+        // Refresh display
+        filteredRecords[targetType] = [...records[targetType]];
+        if (document.getElementById('searchInput').value || 
+            document.getElementById('dateFilter').value !== 'all' ||
+            document.getElementById('categoryFilter').value !== 'all' ||
+            document.getElementById('shiftFilter').value !== 'all') {
+          filterRecords();
+        }
         updateUI();
+        
+        // Close modal and show success
         closeEditModal();
-        showToast('Entry updated! Click Sync to upload.', 'success');
+        showToast('✅ Entry updated successfully!', 'success');
         
       } catch (err) {
-        console.error('Edit error:', err);
+        console.error('[EDIT] Error:', err);
         showToast('Error: ' + err.message, 'error');
       } finally {
         saveBtn.disabled = false;
@@ -4369,17 +4480,6 @@
       // Make sure record has the type
       record.type = currentTab;
       
-      // Add to pending deletes for later sync
-      const pendingDeletes = JSON.parse(localStorage.getItem('pendingDeletes') || '[]');
-      pendingDeletes.push({
-        id: record.id,
-        type: currentTab,
-        category: record.category,
-        amount: record.amount,
-        deletedAt: new Date().toISOString()
-      });
-      localStorage.setItem('pendingDeletes', JSON.stringify(pendingDeletes));
-      
       // Log the activity before deleting
       addLocalLog('DELETE', currentTab, `${record.category} - ₱${record.amount.toLocaleString()} ${record.remarks ? '(' + record.remarks + ')' : ''}`);
       
@@ -4387,12 +4487,19 @@
       records[currentTab] = records[currentTab].filter(r => String(r.id) !== String(deleteTargetId));
       saveToStorage();
       
-      // Mark as pending sync
-      markPendingSync();
+      // Auto-sync delete to Google Sheets
+      if (googleSheetsUrl && navigator.onLine) {
+        try {
+          await sendToGoogleSheets('DELETE', record);
+        } catch (err) {
+          console.error('Delete sync error:', err);
+        }
+      }
       
+      filterRecords();
       updateUI();
       closeDeleteModal();
-      showToast('Record deleted! Click Sync to update cloud.', 'success');
+      showToast('Record deleted successfully!', 'success');
     }
 
     // ==========================================
@@ -4463,79 +4570,15 @@
       dot.className = 'status-dot syncing';
       text.textContent = 'Syncing...';
       
-      let syncedCount = 0;
-      let errorCount = 0;
-      
       try {
-        // 1. Sync pending deletes first
-        const pendingDeletes = JSON.parse(localStorage.getItem('pendingDeletes') || '[]');
-        for (const del of pendingDeletes) {
-          try {
-            text.textContent = `Deleting ${del.category}...`;
-            await sendToGoogleSheets('DELETE', { id: del.id, type: del.type });
-            syncedCount++;
-          } catch (err) {
-            console.error('Delete sync error:', err);
-            errorCount++;
-          }
-        }
-        // Clear pending deletes after sync
-        localStorage.setItem('pendingDeletes', '[]');
-        
-        // 2. Sync unsynced IN records
-        for (let i = 0; i < records.in.length; i++) {
-          if (records.in[i].synced === false) {
-            try {
-              text.textContent = `Syncing IN: ${records.in[i].category}...`;
-              await sendToGoogleSheets('ADD', { ...records.in[i], type: 'in' });
-              records.in[i].synced = true;
-              syncedCount++;
-            } catch (err) {
-              console.error('IN sync error:', err);
-              errorCount++;
-            }
-          }
-        }
-        
-        // 3. Sync unsynced OUT records
-        for (let i = 0; i < records.out.length; i++) {
-          if (records.out[i].synced === false) {
-            try {
-              text.textContent = `Syncing OUT: ${records.out[i].category}...`;
-              await sendToGoogleSheets('ADD', { ...records.out[i], type: 'out' });
-              records.out[i].synced = true;
-              syncedCount++;
-            } catch (err) {
-              console.error('OUT sync error:', err);
-              errorCount++;
-            }
-          }
-        }
-        
-        // Save updated sync status
-        saveToStorage();
-        
-        // 4. Pull latest from Google Sheets
+        // Pull latest from Google Sheets
         text.textContent = 'Fetching latest...';
         await syncFromGoogleSheets();
         
         // Update UI
-        updateSyncBadge(0);
         dot.className = 'status-dot';
-        
-        if (errorCount > 0) {
-          text.textContent = `Synced with ${errorCount} errors`;
-          showToast(`⚠️ Synced ${syncedCount} items, ${errorCount} failed`, 'warning');
-        } else if (syncedCount > 0) {
-          text.textContent = '✓ All synced';
-          showToast(`✅ Synced ${syncedCount} items successfully!`, 'success');
-        } else {
-          text.textContent = '✓ Up to date';
-          showToast('✅ Already up to date!', 'success');
-        }
-        
-        // Log the sync
-        addLocalLog('SYNC', 'ALL', `Synced ${syncedCount} items`);
+        text.textContent = '✓ Synced';
+        showToast('✅ Data synced from cloud!', 'success');
         
       } catch (err) {
         console.error('Manual sync error:', err);
