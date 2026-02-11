@@ -2779,6 +2779,10 @@
       out: ['Cashout', 'Expenses', 'Savings', 'Salary', 'Chips Refill', 'Agent Comms']
     };
 
+    // Auto-sync interval (for real-time updates across devices)
+    let autoSyncInterval = null;
+    const AUTO_SYNC_INTERVAL = 30000; // 30 seconds
+
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
       loadFromStorage();
@@ -2797,25 +2801,69 @@
       if (formCollapsed === 'false') {
         document.getElementById('formPanel').classList.remove('collapsed');
       }
+      
+      // Start auto-sync polling for real-time updates across devices
+      startAutoSync();
+      
+      // Initial sync from cloud on page load
+      if (googleSheetsUrl && navigator.onLine) {
+        setTimeout(() => {
+          syncFromGoogleSheets();
+        }, 1000);
+      }
     });
+    
+    // Start auto-sync polling
+    function startAutoSync() {
+      // Clear any existing interval
+      if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+      }
+      
+      // Only start if connected to Google Sheets
+      if (googleSheetsUrl) {
+        autoSyncInterval = setInterval(() => {
+          if (navigator.onLine && document.visibilityState === 'visible') {
+            console.log('[AUTO-SYNC] Checking for updates...');
+            syncFromGoogleSheets(true); // Silent sync
+          }
+        }, AUTO_SYNC_INTERVAL);
+        console.log('[AUTO-SYNC] Started - checking every ' + (AUTO_SYNC_INTERVAL/1000) + 's');
+      }
+    }
+    
+    // Stop auto-sync polling
+    function stopAutoSync() {
+      if (autoSyncInterval) {
+        clearInterval(autoSyncInterval);
+        autoSyncInterval = null;
+        console.log('[AUTO-SYNC] Stopped');
+      }
+    }
 
     // Sync records FROM Google Sheets (for cross-device sync)
-    async function syncFromGoogleSheets() {
+    // silent = true for background auto-sync (no toast notifications)
+    async function syncFromGoogleSheets(silent = false) {
       if (!googleSheetsUrl) return;
       
       // Check if online
       if (!navigator.onLine) {
-        showToast('📴 Offline - Using cached data', 'warning');
+        if (!silent) {
+          showToast('📴 Offline - Using cached data', 'warning');
+        }
         document.getElementById('statusDot').className = 'status-dot offline';
-        document.getElementById('statusText').textContent = 'Offline Mode';
+        document.getElementById('statusText').textContent = 'Offline';
         return;
       }
       
       const dot = document.getElementById('statusDot');
       const statusText = document.getElementById('statusText');
       
-      dot.className = 'status-dot syncing';
-      statusText.textContent = 'Syncing...';
+      // Only show syncing status for non-silent sync
+      if (!silent) {
+        dot.className = 'status-dot syncing';
+        statusText.textContent = 'Syncing...';
+      }
       
       try {
         // Fetch IN records
@@ -2826,7 +2874,9 @@
         const outResponse = await fetch(`${googleSheetsUrl}?action=GET&type=OUT`);
         const outData = await outResponse.json();
         
-        console.log('Fetched from Google Sheets - IN:', inData, 'OUT:', outData);
+        // Check if data has changed
+        const oldInCount = records.in.length;
+        const oldOutCount = records.out.length;
         
         if (inData.success && inData.records) {
           records.in = inData.records.map(r => ({
@@ -2862,6 +2912,11 @@
           })).filter(r => r.date);
         }
         
+        // Check if counts changed (new data from other devices)
+        const newInCount = records.in.length;
+        const newOutCount = records.out.length;
+        const hasChanges = (newInCount !== oldInCount) || (newOutCount !== oldOutCount);
+        
         // Records already come sorted from Google Sheets (newest first)
         // Just save to localStorage for offline access
         saveToStorage();
@@ -2880,23 +2935,30 @@
         
         updateUI();
         
-        dot.className = 'status-dot';
-        statusText.textContent = 'Synced ✓';
+        dot.className = 'status-dot connected';
+        statusText.textContent = 'Connected';
         
         const totalRecords = records.in.length + records.out.length;
         
-        // Log the sync activity
-        addLocalLog('SYNC', 'ALL', `Synced ${totalRecords} records (IN: ${records.in.length}, OUT: ${records.out.length})`);
-        
-        showToast(`✅ Synced ${totalRecords} records from cloud`, 'success');
+        // Show notification based on mode and changes
+        if (!silent) {
+          addLocalLog('SYNC', 'ALL', `Synced ${totalRecords} records (IN: ${records.in.length}, OUT: ${records.out.length})`);
+          showToast(`✅ Synced ${totalRecords} records from cloud`, 'success');
+        } else if (hasChanges) {
+          // Silent sync but found new data - notify user
+          showToast(`🔄 New data received from other device!`, 'success');
+          console.log('[AUTO-SYNC] New data detected - IN:', newInCount, 'OUT:', newOutCount);
+        }
         
         console.log('[SYNC] Complete - IN:', records.in.length, 'OUT:', records.out.length);
         
       } catch (err) {
         console.error('Sync error:', err);
-        dot.className = 'status-dot offline';
-        statusText.textContent = 'Sync Failed';
-        showToast('Could not sync from Google Sheets. Using local data.', 'warning');
+        if (!silent) {
+          dot.className = 'status-dot offline';
+          statusText.textContent = 'Sync Failed';
+          showToast('Could not sync from Google Sheets. Using local data.', 'warning');
+        }
       }
     }
     
@@ -2972,25 +3034,40 @@
       document.getElementById('installBanner').classList.add('show');
     });
 
-    // Note: We don't auto-sync FROM Google Sheets on visibility change
-    // This prevents overwriting local edits. Users can manually sync if needed.
+    // Auto-sync when page becomes visible (for cross-device updates)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        console.log('Page visible');
+        console.log('[VISIBILITY] Page visible - checking for updates');
         updateConnectionStatus();
+        
+        // Sync from cloud when user returns to app
+        if (googleSheetsUrl && navigator.onLine) {
+          syncFromGoogleSheets(true); // Silent sync
+        }
       }
     });
 
-    // When coming back online, just update status - don't auto-sync FROM sheets
+    // When coming back online, sync immediately
     window.addEventListener('online', () => {
       updateConnectionStatus();
-      showToast('🟢 Back online!', 'success');
+      showToast('🟢 Back online! Syncing...', 'success');
+      
+      // Sync from cloud
+      if (googleSheetsUrl) {
+        syncFromGoogleSheets();
+      }
+      
+      // Restart auto-sync
+      startAutoSync();
     });
 
     // Handle going offline
     window.addEventListener('offline', () => {
       updateConnectionStatus();
       showToast('📴 You are offline - Data saved locally', 'warning');
+      
+      // Stop auto-sync when offline
+      stopAutoSync();
     });
 
     // Dashboard Toggle
@@ -4104,6 +4181,13 @@
         
         showToast(`Entry added successfully!`, 'success');
         
+        // Refresh data from cloud after 2 seconds (let the server process first)
+        if (googleSheetsUrl && navigator.onLine) {
+          setTimeout(() => {
+            syncFromGoogleSheets();
+          }, 2000);
+        }
+        
       } catch (err) {
         console.error('Submit error:', err);
         showToast('Error saving entry', 'error');
@@ -4449,6 +4533,13 @@
         closeEditModal();
         showToast('✅ Entry updated successfully!', 'success');
         
+        // Refresh data from cloud after 2 seconds
+        if (googleSheetsUrl && navigator.onLine) {
+          setTimeout(() => {
+            syncFromGoogleSheets();
+          }, 2000);
+        }
+        
       } catch (err) {
         console.error('[EDIT] Error:', err);
         showToast('Error: ' + err.message, 'error');
@@ -4503,6 +4594,13 @@
       updateUI();
       closeDeleteModal();
       showToast('Record deleted successfully!', 'success');
+      
+      // Refresh data from cloud after 2 seconds
+      if (googleSheetsUrl && navigator.onLine) {
+        setTimeout(() => {
+          syncFromGoogleSheets(true); // Silent sync
+        }, 2000);
+      }
     }
 
     // ==========================================
@@ -5038,11 +5136,17 @@
       closeGoogleSheetsModal();
       showToast('Google Sheets URL saved!', 'success');
       
-      // Sync immediately after connecting
+      // Sync immediately after connecting and start auto-sync
       if (googleSheetsUrl) {
         setTimeout(() => {
           syncFromGoogleSheets();
         }, 500);
+        
+        // Start auto-sync for real-time updates
+        startAutoSync();
+      } else {
+        // Stop auto-sync if URL removed
+        stopAutoSync();
       }
     }
 
