@@ -176,7 +176,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
 
     .summary-card {
@@ -225,7 +225,7 @@
 
     /* Tabs */
     .tabs-wrapper {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .tabs {
@@ -1650,7 +1650,7 @@
 
     /* Dashboard Toggle */
     .dashboard-toggle {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .toggle-btn {
@@ -1682,7 +1682,7 @@
 
     /* Dashboard Section */
     .dashboard-section {
-      margin-bottom: 24px;
+      margin-bottom: 16px;
       animation: slideDown 0.3s ease;
     }
 
@@ -1701,7 +1701,7 @@
     .period-tabs {
       display: flex;
       gap: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       background: var(--bg-card);
       padding: 6px;
       border-radius: 12px;
@@ -1737,7 +1737,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
     }
 
     .period-stat {
@@ -1978,7 +1978,7 @@
     .search-filter-section {
       display: flex;
       gap: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
@@ -2337,16 +2337,16 @@
         <select id="categoryFilter" onchange="filterRecords()">
           <option value="all">📁 All Categories</option>
           <optgroup label="Fund IN">
-            <option value="Remittance">Remittance</option>
-            <option value="Additional Funds">Additional Funds</option>
+            <option value="Remittance">💸 Remittance</option>
+            <option value="Additional Funds">💰 Additional Funds</option>
           </optgroup>
           <optgroup label="Fund OUT">
-            <option value="Cashout">Cashout</option>
-            <option value="Expenses">Expenses</option>
-            <option value="Savings">Savings</option>
-            <option value="Salary">Salary</option>
-            <option value="Chips Refill">Chips Refill</option>
-            <option value="Agent Comms">Agent Comms</option>
+            <option value="Cashout">🏧 Cashout</option>
+            <option value="Expenses">🛒 Expenses</option>
+            <option value="Savings">🏦 Savings</option>
+            <option value="Salary">💵 Salary</option>
+            <option value="Chips Refill">🎰 Chips Refill</option>
+            <option value="Agent Comms">👥 Agent Comms</option>
           </optgroup>
         </select>
         <select id="shiftFilter" onchange="filterRecords()">
@@ -2841,6 +2841,24 @@
       }
     }
 
+    // Sort records by date (newest first) and time (newest first)
+    function sortRecordsByDateTime(recordsArray) {
+      return recordsArray.sort((a, b) => {
+        // Compare dates first
+        const dateA = a.date ? new Date(a.date + 'T00:00:00') : new Date(0);
+        const dateB = b.date ? new Date(b.date + 'T00:00:00') : new Date(0);
+        
+        if (dateB.getTime() !== dateA.getTime()) {
+          return dateB.getTime() - dateA.getTime(); // Newest date first
+        }
+        
+        // If same date, compare times
+        const timeA = a.time || '00:00';
+        const timeB = b.time || '00:00';
+        return timeB.localeCompare(timeA); // Newest time first
+      });
+    }
+
     // Sync records FROM Google Sheets (for cross-device sync)
     // silent = true for background auto-sync (no toast notifications)
     async function syncFromGoogleSheets(silent = false) {
@@ -2878,8 +2896,16 @@
         const oldInCount = records.in.length;
         const oldOutCount = records.out.length;
         
+        // Keep track of pending local entries (not yet synced)
+        const pendingInEntries = records.in.filter(r => r.pendingSync === true);
+        const pendingOutEntries = records.out.filter(r => r.pendingSync === true);
+        
+        // Map cloud records
+        let cloudInRecords = [];
+        let cloudOutRecords = [];
+        
         if (inData.success && inData.records) {
-          records.in = inData.records.map(r => ({
+          cloudInRecords = inData.records.map(r => ({
             id: r.row_id || String(Date.now() + Math.random()),
             date: formatDateFromSheet(r.date),
             time: formatTimeFromSheet(r.time),
@@ -2891,12 +2917,13 @@
             receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             type: 'in',
-            rowNumber: r.row_number || 0
+            rowNumber: r.row_number || 0,
+            pendingSync: false
           })).filter(r => r.date);
         }
         
         if (outData.success && outData.records) {
-          records.out = outData.records.map(r => ({
+          cloudOutRecords = outData.records.map(r => ({
             id: r.row_id || String(Date.now() + Math.random()),
             date: formatDateFromSheet(r.date),
             time: formatTimeFromSheet(r.time),
@@ -2908,17 +2935,34 @@
             receipt: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             receiptUrl: r.receipt && r.receipt.includes('drive.google.com') ? r.receipt : null,
             type: 'out',
-            rowNumber: r.row_number || 0
+            rowNumber: r.row_number || 0,
+            pendingSync: false
           })).filter(r => r.date);
         }
+        
+        // Merge: Cloud records + Pending local entries (that aren't in cloud yet)
+        // Remove duplicates by ID
+        const cloudInIds = new Set(cloudInRecords.map(r => r.id));
+        const cloudOutIds = new Set(cloudOutRecords.map(r => r.id));
+        
+        // Add pending entries that don't exist in cloud
+        const uniquePendingIn = pendingInEntries.filter(r => !cloudInIds.has(r.id));
+        const uniquePendingOut = pendingOutEntries.filter(r => !cloudOutIds.has(r.id));
+        
+        // Combine cloud records with unique pending entries
+        records.in = [...cloudInRecords, ...uniquePendingIn];
+        records.out = [...cloudOutRecords, ...uniquePendingOut];
+        
+        // Sort records by date and time (newest first)
+        records.in = sortRecordsByDateTime(records.in);
+        records.out = sortRecordsByDateTime(records.out);
         
         // Check if counts changed (new data from other devices)
         const newInCount = records.in.length;
         const newOutCount = records.out.length;
         const hasChanges = (newInCount !== oldInCount) || (newOutCount !== oldOutCount);
         
-        // Records already come sorted from Google Sheets (newest first)
-        // Just save to localStorage for offline access
+        // Save to localStorage for offline access
         saveToStorage();
         
         // Update filtered records to match
@@ -3047,19 +3091,63 @@
       }
     });
 
-    // When coming back online, sync immediately
-    window.addEventListener('online', () => {
+    // When coming back online, sync pending entries first, then refresh
+    window.addEventListener('online', async () => {
       updateConnectionStatus();
-      showToast('🟢 Back online! Syncing...', 'success');
+      showToast('🟢 Back online! Syncing pending entries...', 'success');
       
-      // Sync from cloud
+      // First, sync any pending entries TO Google Sheets
       if (googleSheetsUrl) {
-        syncFromGoogleSheets();
+        await syncPendingEntries();
+        
+        // Then refresh FROM Google Sheets
+        setTimeout(() => {
+          syncFromGoogleSheets();
+        }, 2000);
       }
       
       // Restart auto-sync
       startAutoSync();
     });
+
+    // Sync pending offline entries to Google Sheets
+    async function syncPendingEntries() {
+      if (!googleSheetsUrl || !navigator.onLine) return;
+      
+      let syncedCount = 0;
+      
+      // Sync pending IN entries
+      for (let i = 0; i < records.in.length; i++) {
+        if (records.in[i].pendingSync) {
+          try {
+            await sendToGoogleSheets('ADD', records.in[i]);
+            records.in[i].pendingSync = false;
+            syncedCount++;
+          } catch (err) {
+            console.error('Failed to sync pending IN entry:', err);
+          }
+        }
+      }
+      
+      // Sync pending OUT entries
+      for (let i = 0; i < records.out.length; i++) {
+        if (records.out[i].pendingSync) {
+          try {
+            await sendToGoogleSheets('ADD', records.out[i]);
+            records.out[i].pendingSync = false;
+            syncedCount++;
+          } catch (err) {
+            console.error('Failed to sync pending OUT entry:', err);
+          }
+        }
+      }
+      
+      if (syncedCount > 0) {
+        saveToStorage();
+        showToast(`📤 Synced ${syncedCount} offline entries!`, 'success');
+        console.log('[SYNC] Synced', syncedCount, 'pending entries');
+      }
+    }
 
     // Handle going offline
     window.addEventListener('offline', () => {
@@ -3515,20 +3603,21 @@
       const startStr = startDate.toISOString().split('T')[0];
       const endStr = endDate.toISOString().split('T')[0];
       
-      const categoryTotals = { 'Cashout': 0, 'Expenses': 0, 'Savings': 0, 'Salary': 0, 'Chips Refill': 0, 'Agent Comms': 0 };
+      const categoryTotals = { 'cashout': 0, 'expenses': 0, 'savings': 0, 'salary': 0, 'chips refill': 0, 'agent comms': 0 };
       records.out.filter(r => r.date >= startStr && r.date <= endStr).forEach(r => {
-        if (categoryTotals.hasOwnProperty(r.category)) {
-          categoryTotals[r.category] += r.amount;
+        const catLower = (r.category || '').trim().toLowerCase();
+        if (categoryTotals.hasOwnProperty(catLower)) {
+          categoryTotals[catLower] += r.amount;
         }
       });
       
       categoryChart.data.datasets[0].data = [
-        categoryTotals['Cashout'],
-        categoryTotals['Expenses'],
-        categoryTotals['Savings'],
-        categoryTotals['Salary'],
-        categoryTotals['Chips Refill'],
-        categoryTotals['Agent Comms']
+        categoryTotals['cashout'],
+        categoryTotals['expenses'],
+        categoryTotals['savings'],
+        categoryTotals['salary'],
+        categoryTotals['chips refill'],
+        categoryTotals['agent comms']
       ];
       categoryChart.update();
     }
@@ -3595,9 +3684,11 @@
           }
         }
         
-        // Category filter
+        // Category filter (case-insensitive and trimmed)
         if (categoryFilter !== 'all') {
-          if (record.category !== categoryFilter) return false;
+          const recordCat = (record.category || '').trim().toLowerCase();
+          const filterCat = categoryFilter.trim().toLowerCase();
+          if (recordCat !== filterCat) return false;
         }
         
         // Shift filter
@@ -3772,22 +3863,22 @@
         categorySelect.innerHTML += `<option value="${cat}">${icon} ${cat}</option>`;
       });
       
-      // Update category filter options
+      // Update category filter options with emojis
       if (tab === 'in') {
         categoryFilter.innerHTML = `
           <option value="all">📁 All Categories</option>
-          <option value="Remittance">Remittance</option>
-          <option value="Additional Funds">Additional Funds</option>
+          <option value="Remittance">💸 Remittance</option>
+          <option value="Additional Funds">💰 Additional Funds</option>
         `;
       } else {
         categoryFilter.innerHTML = `
           <option value="all">📁 All Categories</option>
-          <option value="Cashout">Cashout</option>
-          <option value="Expenses">Expenses</option>
-          <option value="Savings">Savings</option>
-          <option value="Salary">Salary</option>
-          <option value="Chips Refill">Chips Refill</option>
-          <option value="Agent Comms">Agent Comms</option>
+          <option value="Cashout">🏧 Cashout</option>
+          <option value="Expenses">🛒 Expenses</option>
+          <option value="Savings">🏦 Savings</option>
+          <option value="Salary">💵 Salary</option>
+          <option value="Chips Refill">🎰 Chips Refill</option>
+          <option value="Agent Comms">👥 Agent Comms</option>
         `;
       }
       
@@ -3812,17 +3903,18 @@
     }
 
     function getCategoryIcon(cat) {
+      const catLower = (cat || '').trim().toLowerCase();
       const icons = {
-        'Remittance': '💸',
-        'Additional Funds': '💰',
-        'Cashout': '🏧',
-        'Expenses': '🛒',
-        'Savings': '🏦',
-        'Salary': '💵',
-        'Chips Refill': '🎰',
-        'Agent Comms': '👥'
+        'remittance': '💸',
+        'additional funds': '💰',
+        'cashout': '🏧',
+        'expenses': '🛒',
+        'savings': '🏦',
+        'salary': '💵',
+        'chips refill': '🎰',
+        'agent comms': '👥'
       };
-      return icons[cat] || '📋';
+      return icons[catLower] || '📋';
     }
 
     // Photo Handling
@@ -4150,18 +4242,36 @@
           receipt: primaryReceipt,
           receipts: currentPhotos.map(p => p.data), // Store all photos
           receiptCount: currentPhotos.length,
-          type: currentTab
+          type: currentTab,
+          pendingSync: !navigator.onLine // Mark as pending if offline
         };
         
-        // Save locally first (for offline support)
-        records[currentTab].unshift(entry);
+        // Add entry to records
+        records[currentTab].push(entry);
+        
+        // Sort records by date and time (newest first)
+        records[currentTab] = sortRecordsByDateTime(records[currentTab]);
+        
+        // Save to localStorage
         saveToStorage();
+        
+        // Update filtered records and UI
+        filteredRecords[currentTab] = [...records[currentTab]];
         updateUI();
         
-        // Auto-sync to Google Sheets
+        // Auto-sync to Google Sheets if online
         if (googleSheetsUrl && navigator.onLine) {
           submitBtn.innerHTML = '<div class="spinner"></div> Syncing...';
           await sendToGoogleSheets('ADD', entry);
+          
+          // Mark as synced
+          const entryIndex = records[currentTab].findIndex(r => r.id === entry.id);
+          if (entryIndex !== -1) {
+            records[currentTab][entryIndex].pendingSync = false;
+            saveToStorage();
+          }
+        } else if (!navigator.onLine) {
+          showToast('📴 Saved offline - will sync when online', 'warning');
         }
         
         // Reset form
@@ -4179,13 +4289,15 @@
         // Log the activity
         addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()} ${entry.remarks ? '(' + entry.remarks + ')' : ''}`);
         
-        showToast(`Entry added successfully!`, 'success');
+        if (navigator.onLine) {
+          showToast(`Entry added successfully!`, 'success');
+        }
         
-        // Refresh data from cloud after 2 seconds (let the server process first)
+        // Refresh data from cloud after 3 seconds (let the server process first)
         if (googleSheetsUrl && navigator.onLine) {
           setTimeout(() => {
-            syncFromGoogleSheets();
-          }, 2000);
+            syncFromGoogleSheets(true); // Silent sync
+          }, 3000);
         }
         
       } catch (err) {
@@ -4498,6 +4610,9 @@
         
         // IMPORTANT: Directly replace at the specific index only
         records[targetType][recordIndex] = updatedRecord;
+        
+        // Sort records by date and time (in case date was changed)
+        records[targetType] = sortRecordsByDateTime(records[targetType]);
         
         // Save to localStorage
         saveToStorage();
@@ -5093,17 +5208,18 @@
     }
 
     function getCategoryClass(cat) {
+      const catLower = (cat || '').trim().toLowerCase();
       const classes = {
-        'Remittance': 'cat-remittance',
-        'Additional Funds': 'cat-additional',
-        'Cashout': 'cat-cashout',
-        'Expenses': 'cat-expenses',
-        'Savings': 'cat-savings',
-        'Salary': 'cat-salary',
-        'Chips Refill': 'cat-chips',
-        'Agent Comms': 'cat-agent'
+        'remittance': 'cat-remittance',
+        'additional funds': 'cat-additional',
+        'cashout': 'cat-cashout',
+        'expenses': 'cat-expenses',
+        'savings': 'cat-savings',
+        'salary': 'cat-salary',
+        'chips refill': 'cat-chips',
+        'agent comms': 'cat-agent'
       };
-      return classes[cat] || '';
+      return classes[catLower] || '';
     }
 
     // Storage
@@ -5115,6 +5231,10 @@
       const saved = localStorage.getItem('cohRecords');
       if (saved) {
         records = JSON.parse(saved);
+        
+        // Sort records by date and time (newest first)
+        records.in = sortRecordsByDateTime(records.in || []);
+        records.out = sortRecordsByDateTime(records.out || []);
       }
     }
 
