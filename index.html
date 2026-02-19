@@ -967,6 +967,16 @@
       color: var(--bg-primary);
     }
 
+    .receipt-link.folder {
+      background: rgba(77, 159, 255, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .receipt-link.folder:hover {
+      background: var(--accent-blue);
+      color: white;
+    }
+
     .action-buttons {
       display: flex;
       gap: 6px;
@@ -2060,10 +2070,10 @@
     .filter-group select {
       width: 100%;
       padding: 10px 12px;
-      background: var(--bg-card);
+      background-color: #1e1e2f;
       border: 1px solid var(--border);
       border-radius: 8px;
-      color: var(--text-primary);
+      color: #e8e8e8;
       font-size: 12px;
       cursor: pointer;
       -webkit-appearance: none;
@@ -2073,17 +2083,18 @@
       background-repeat: no-repeat;
       background-position: right 10px center;
       padding-right: 30px;
+      color-scheme: dark;
     }
 
     .filter-group select option {
-      background: var(--bg-card);
-      color: var(--text-primary);
+      background-color: #1e1e2f;
+      color: #e8e8e8;
       padding: 10px;
     }
 
     .filter-group select optgroup {
-      background: var(--bg-elevated);
-      color: var(--text-secondary);
+      background-color: #151525;
+      color: #888;
       font-weight: 600;
     }
 
@@ -3807,11 +3818,20 @@
         if (record.receipt) {
           if (record.receipt.startsWith('data:image')) {
             receiptHtml = `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">`;
+          } else if (record.receipt.includes('drive.google.com/drive/folders')) {
+            // Folder link - multiple photos
+            const photoCount = record.receiptCount || 'Multiple';
+            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link folder">📁 ${photoCount} Photos</a>`;
           } else if (record.receipt.includes('drive.google.com') || record.receipt.startsWith('https://')) {
             receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link">📷 View</a>`;
           }
         } else if (record.receiptUrl) {
-          receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
+          if (record.receiptUrl.includes('drive.google.com/drive/folders')) {
+            const photoCount = record.receiptCount || 'Multiple';
+            receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link folder">📁 ${photoCount} Photos</a>`;
+          } else {
+            receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
+          }
         }
         
         const displayDate = formatDate(record.date);
@@ -4392,15 +4412,24 @@
       }
       
       console.log('Opening edit modal for record:', record);
+      console.log('Record receipt:', record.receipt ? (record.receipt.substring(0, 50) + '...') : 'null');
+      console.log('Record receiptUrl:', record.receiptUrl || 'null');
       
       editTargetId = String(id);
       editTargetType = type;
       
       // Store original receipt info - don't modify unless user changes it
+      // Check if receipt is base64 or Drive URL
+      const hasBase64Receipt = record.receipt && record.receipt.startsWith('data:image');
+      const hasDriveUrl = (record.receipt && record.receipt.includes('drive.google.com')) || 
+                          (record.receiptUrl && record.receiptUrl.includes('drive.google.com'));
+      
       editOriginalReceipt = record.receipt || null;
-      editOriginalReceiptUrl = record.receiptUrl || null;
-      editPhotoBase64 = record.receipt || null;
+      editOriginalReceiptUrl = record.receiptUrl || (hasDriveUrl ? record.receipt : null);
+      editPhotoBase64 = hasBase64Receipt ? record.receipt : null; // Only set if it's base64
       editPhotoChanged = false; // Important: start as false
+      
+      console.log('Edit modal - hasBase64:', hasBase64Receipt, 'hasDriveUrl:', hasDriveUrl);
       
       // Populate form
       document.getElementById('editId').value = record.id;
@@ -4465,8 +4494,24 @@
       const label = document.getElementById('editPhotoLabel');
       const area = document.getElementById('editPhotoArea');
       
-      // Get the current photo - either new one or original
-      const currentPhoto = editPhotoBase64 || editOriginalReceipt || editOriginalReceiptUrl;
+      // Get the current photo - prioritize: new base64 > original base64 > original URL > receiptUrl
+      let currentPhoto = null;
+      let isBase64 = false;
+      let isDriveUrl = false;
+      
+      if (editPhotoBase64 && editPhotoBase64.startsWith('data:image')) {
+        currentPhoto = editPhotoBase64;
+        isBase64 = true;
+      } else if (editOriginalReceipt && editOriginalReceipt.startsWith('data:image')) {
+        currentPhoto = editOriginalReceipt;
+        isBase64 = true;
+      } else if (editOriginalReceiptUrl && editOriginalReceiptUrl.includes('drive.google.com')) {
+        currentPhoto = editOriginalReceiptUrl;
+        isDriveUrl = true;
+      } else if (editOriginalReceipt && editOriginalReceipt.includes('drive.google.com')) {
+        currentPhoto = editOriginalReceipt;
+        isDriveUrl = true;
+      }
       
       // Hide all states first
       preview.classList.remove('has-photo');
@@ -4474,14 +4519,14 @@
       empty.classList.add('hidden');
       area.classList.remove('has-existing-photo');
       
-      if (currentPhoto && currentPhoto.startsWith('data:image')) {
+      if (isBase64) {
         // Base64 image - show preview
         img.src = currentPhoto;
         preview.classList.add('has-photo');
         area.classList.add('has-existing-photo');
         label.textContent = 'Change Photo:';
-      } else if (currentPhoto && (currentPhoto.includes('drive.google.com') || currentPhoto.startsWith('https://'))) {
-        // Google Drive or URL link - show link preview
+      } else if (isDriveUrl) {
+        // Google Drive link - show link preview
         driveUrl.href = currentPhoto;
         driveLink.style.display = 'flex';
         area.classList.add('has-existing-photo');
@@ -4494,12 +4539,17 @@
     }
 
     function viewEditPhoto() {
-      const currentPhoto = editPhotoBase64 || editOriginalReceipt;
-      if (currentPhoto && currentPhoto.startsWith('data:image')) {
-        document.getElementById('modalImage').src = currentPhoto;
+      // Check for base64 first, then Drive URL
+      if (editPhotoBase64 && editPhotoBase64.startsWith('data:image')) {
+        document.getElementById('modalImage').src = editPhotoBase64;
         document.getElementById('imageModal').classList.add('active');
-      } else if (currentPhoto && currentPhoto.includes('http')) {
-        window.open(currentPhoto, '_blank');
+      } else if (editOriginalReceipt && editOriginalReceipt.startsWith('data:image')) {
+        document.getElementById('modalImage').src = editOriginalReceipt;
+        document.getElementById('imageModal').classList.add('active');
+      } else if (editOriginalReceiptUrl && editOriginalReceiptUrl.includes('http')) {
+        window.open(editOriginalReceiptUrl, '_blank');
+      } else if (editOriginalReceipt && editOriginalReceipt.includes('http')) {
+        window.open(editOriginalReceipt, '_blank');
       }
     }
 
@@ -4629,6 +4679,10 @@
         // Get the original record
         const originalRecord = records[targetType][recordIndex];
         
+        console.log('[EDIT] Original record receipt:', originalRecord.receipt ? 'exists' : 'null');
+        console.log('[EDIT] Original record receiptUrl:', originalRecord.receiptUrl || 'null');
+        console.log('[EDIT] editPhotoChanged:', editPhotoChanged);
+        
         // Determine receipt value - only change if user explicitly changed it
         let finalReceipt = originalRecord.receipt;
         let finalReceiptUrl = originalRecord.receiptUrl;
@@ -4636,13 +4690,33 @@
         let finalReceiptCount = originalRecord.receiptCount || 0;
         
         if (editPhotoChanged) {
-          finalReceipt = editPhotoBase64 || null;
-          finalReceiptUrl = null;
-          finalReceipts = editPhotoBase64 ? [editPhotoBase64] : [];
-          finalReceiptCount = editPhotoBase64 ? 1 : 0;
-          console.log('[EDIT] Photo changed:', editPhotoBase64 ? 'new photo' : 'removed');
+          // User explicitly changed the photo
+          if (editPhotoBase64) {
+            // New photo added
+            finalReceipt = editPhotoBase64;
+            finalReceiptUrl = null; // Will be set after upload
+            finalReceipts = [editPhotoBase64];
+            finalReceiptCount = 1;
+            console.log('[EDIT] Photo changed: new photo added');
+          } else {
+            // Photo removed
+            finalReceipt = null;
+            finalReceiptUrl = null;
+            finalReceipts = [];
+            finalReceiptCount = 0;
+            console.log('[EDIT] Photo changed: photo removed');
+          }
         } else {
-          console.log('[EDIT] Photo unchanged, keeping original');
+          // Photo NOT changed - preserve everything from original
+          // If original has a Drive URL, keep it
+          if (originalRecord.receiptUrl && originalRecord.receiptUrl.includes('drive.google.com')) {
+            finalReceipt = originalRecord.receiptUrl; // Use URL as receipt too
+            finalReceiptUrl = originalRecord.receiptUrl;
+          } else if (originalRecord.receipt && originalRecord.receipt.includes('drive.google.com')) {
+            finalReceipt = originalRecord.receipt;
+            finalReceiptUrl = originalRecord.receipt;
+          }
+          console.log('[EDIT] Photo unchanged, keeping original:', finalReceipt || finalReceiptUrl || 'none');
         }
         
         // Create updated record - MUST keep the same ID
@@ -4663,7 +4737,8 @@
           rowNumber: originalRecord.rowNumber
         };
         
-        console.log('[EDIT] Updated record ID:', updatedRecord.id);
+        console.log('[EDIT] Updated record - receipt:', updatedRecord.receipt ? 'exists' : 'null');
+        console.log('[EDIT] Updated record - receiptUrl:', updatedRecord.receiptUrl || 'null');
         
         // IMPORTANT: Directly replace at the specific index only
         records[targetType][recordIndex] = updatedRecord;
@@ -5403,30 +5478,43 @@
       document.getElementById('statusText').textContent = 'Syncing...';
       
       try {
-        // Compress receipt image if exists and is base64
-        let compressedReceipt = null;
+        let compressedReceipts = [];
         let hasLocalReceipt = false;
+        let existingReceiptUrl = null;
         
-        if (entry.receipt && entry.receipt.startsWith('data:image') && entry.receipt.length > 100) {
-          document.getElementById('statusText').textContent = 'Compressing photo...';
+        // Check if receipt is a Google Drive URL (existing uploaded photo/folder)
+        if (entry.receipt && (entry.receipt.includes('drive.google.com') || entry.receipt.startsWith('https://'))) {
+          existingReceiptUrl = entry.receipt;
+          console.log('Preserving existing receipt URL:', existingReceiptUrl);
+        } else if (entry.receiptUrl && (entry.receiptUrl.includes('drive.google.com') || entry.receiptUrl.startsWith('https://'))) {
+          existingReceiptUrl = entry.receiptUrl;
+          console.log('Preserving existing receiptUrl:', existingReceiptUrl);
+        }
+        
+        // Process multiple photos if available (for ADD action)
+        const photosToUpload = entry.receipts || (entry.receipt && entry.receipt.startsWith('data:image') ? [entry.receipt] : []);
+        
+        if (photosToUpload.length > 0 && photosToUpload[0] && photosToUpload[0].startsWith('data:image')) {
           hasLocalReceipt = true;
+          document.getElementById('statusText').textContent = `Compressing ${photosToUpload.length} photo(s)...`;
           
-          try {
-            compressedReceipt = await compressImage(entry.receipt, 600, 0.5);
-            const sizeKB = Math.round(compressedReceipt.length / 1024);
-            console.log('Final receipt size:', sizeKB + 'KB');
-            
-            // If still too large (over 1MB), skip the image
-            if (sizeKB > 1000) {
-              console.log('Image still too large, skipping upload');
-              showToast('Photo too large, saving without image', 'warning');
-              compressedReceipt = null;
+          for (let i = 0; i < photosToUpload.length; i++) {
+            try {
+              const compressed = await compressImage(photosToUpload[i], 600, 0.5);
+              const sizeKB = Math.round(compressed.length / 1024);
+              console.log(`Photo ${i+1} size: ${sizeKB}KB`);
+              
+              if (sizeKB <= 800) {
+                compressedReceipts.push(compressed);
+              } else {
+                console.log(`Photo ${i+1} too large, skipping`);
+              }
+            } catch (compressError) {
+              console.error(`Compression failed for photo ${i+1}:`, compressError);
             }
-          } catch (compressError) {
-            console.error('Compression failed:', compressError);
-            showToast('Photo compression failed, saving without image', 'warning');
-            compressedReceipt = null;
           }
+          
+          console.log(`Compressed ${compressedReceipts.length} of ${photosToUpload.length} photos`);
         }
         
         const payload = {
@@ -5440,37 +5528,50 @@
           remarks: entry.remarks || '',
           amount: entry.amount || 0,
           fee: entry.fee || 0,
-          hasReceipt: !!compressedReceipt || hasLocalReceipt,
-          receiptBase64: compressedReceipt,
+          hasReceipt: compressedReceipts.length > 0 || hasLocalReceipt || !!existingReceiptUrl,
+          receiptBase64: compressedReceipts.length === 1 ? compressedReceipts[0] : null,
+          receiptsBase64: compressedReceipts.length > 1 ? compressedReceipts : null,
+          receiptCount: compressedReceipts.length || entry.receiptCount || 0,
+          existingReceiptUrl: existingReceiptUrl,
           timestamp: new Date().toISOString()
         };
         
-        document.getElementById('statusText').textContent = compressedReceipt ? 'Uploading photo...' : 'Saving...';
-        console.log('Sending to Google Sheets:', action, 'Type:', payload.type, 'Receipt:', compressedReceipt ? Math.round(compressedReceipt.length / 1024) + 'KB' : 'none');
+        document.getElementById('statusText').textContent = compressedReceipts.length > 0 
+          ? `Uploading ${compressedReceipts.length} photo(s)...` 
+          : 'Saving...';
         
-        // Create AbortController for timeout
+        console.log('Sending to Google Sheets:', action, 
+          'Photos:', compressedReceipts.length,
+          'ExistingURL:', existingReceiptUrl ? 'yes' : 'no');
+        
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for multiple photos
         
-        // Send request
         const response = await fetch(googleSheetsUrl, {
           method: 'POST',
           redirect: 'follow',
-          headers: { 
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload),
           signal: controller.signal
         });
         
         clearTimeout(timeoutId);
         
-        // Try to parse response
         try {
           const result = await response.json();
           console.log('Google Sheets response:', result);
           
           if (result.success) {
+            // Update local record with the receipt URL from server
+            if (result.receiptUrl) {
+              const recordIndex = records[entry.type || currentTab].findIndex(r => String(r.id) === String(entry.id));
+              if (recordIndex !== -1) {
+                records[entry.type || currentTab][recordIndex].receiptUrl = result.receiptUrl;
+                records[entry.type || currentTab][recordIndex].receipt = result.receiptUrl;
+                saveToStorage();
+              }
+            }
+            
             dot.className = 'status-dot';
             document.getElementById('statusText').textContent = '✓ Synced';
           } else {
@@ -5479,12 +5580,9 @@
             document.getElementById('statusText').textContent = 'Sync Error';
           }
         } catch (parseErr) {
-          // Response might not be JSON, but request was sent
           dot.className = 'status-dot';
           document.getElementById('statusText').textContent = '✓ Sent';
         }
-        
-        console.log('Sync completed for:', action);
         
       } catch (err) {
         if (err.name === 'AbortError') {
