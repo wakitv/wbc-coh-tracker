@@ -175,15 +175,15 @@
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .summary-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
+      border-radius: 10px;
+      padding: 12px;
       position: relative;
       overflow: hidden;
       transition: transform 0.2s, box-shadow 0.2s;
@@ -204,16 +204,16 @@
     .summary-card.fee::before { background: linear-gradient(135deg, #ffd93d 0%, #ff9f1a 100%); }
 
     .summary-label {
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-secondary);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .summary-value {
       font-family: 'Space Mono', monospace;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       letter-spacing: -0.5px;
     }
@@ -225,30 +225,30 @@
 
     /* Tabs */
     .tabs-wrapper {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .tabs {
       display: inline-flex;
       background: var(--bg-card);
-      border-radius: 12px;
-      padding: 4px;
+      border-radius: 8px;
+      padding: 3px;
       border: 1px solid var(--border);
       width: 100%;
-      max-width: 300px;
+      max-width: 260px;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 12px 20px;
+      padding: 8px 16px;
       border: none;
       background: transparent;
       color: var(--text-secondary);
       font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: 6px;
       transition: all 0.2s;
     }
 
@@ -265,16 +265,16 @@
     /* Main Content Grid */
     .main-grid {
       display: grid;
-      grid-template-columns: 380px 1fr;
-      gap: 20px;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
     }
 
     /* Form Panel */
     .form-panel {
       background: var(--bg-card);
       border: 2px solid var(--accent-in);
-      border-radius: 16px;
-      padding: 24px;
+      border-radius: 12px;
+      padding: 16px;
       height: fit-content;
       transition: all 0.3s ease;
       box-shadow: 0 0 20px rgba(0, 212, 170, 0.1);
@@ -290,8 +290,8 @@
       content: '';
       position: absolute;
       top: 0;
-      left: 24px;
-      right: 24px;
+      left: 16px;
+      right: 16px;
       height: 3px;
       background: var(--gradient-in);
       border-radius: 0 0 3px 3px;
@@ -306,22 +306,22 @@
     }
 
     .form-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .form-title .icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
     }
 
     .form-title.in .icon { background: var(--accent-in-dim); }
@@ -371,7 +371,7 @@
     }
 
     .form-panel.collapsed {
-      padding-bottom: 24px;
+      padding-bottom: 16px;
     }
 
     .form-panel.collapsed .form-title {
@@ -394,22 +394,22 @@
     }
 
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 8px;
     }
 
     label {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-secondary);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     label .required {
@@ -418,13 +418,13 @@
 
     input, select, textarea {
       width: 100%;
-      padding: 12px 14px;
+      padding: 8px 10px;
       background: var(--bg-elevated);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       color: var(--text-primary);
       font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
@@ -441,7 +441,7 @@
 
     textarea {
       resize: vertical;
-      min-height: 70px;
+      min-height: 50px;
     }
 
     .amount-input {
@@ -451,7 +451,7 @@
     .amount-input::before {
       content: '₱';
       position: absolute;
-      left: 14px;
+      left: 10px;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-secondary);
@@ -459,17 +459,17 @@
     }
 
     .amount-input input {
-      padding-left: 32px;
+      padding-left: 26px;
       font-family: 'Space Mono', monospace;
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
     }
 
     /* Photo Upload */
     .photo-upload-area {
       border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 20px;
+      border-radius: 10px;
+      padding: 12px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
@@ -506,12 +506,12 @@
     }
 
     .photo-upload-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
+      font-size: 24px;
+      margin-bottom: 4px;
     }
 
     .photo-upload-text {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
     }
 
@@ -563,27 +563,27 @@
 
     .photo-buttons {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       justify-content: center;
-      margin-top: 12px;
+      margin-top: 8px;
       flex-wrap: wrap;
     }
 
     .photo-btn {
-      padding: 8px 14px;
+      padding: 6px 10px;
       border: 1px solid var(--border);
       background: var(--bg-card);
-      border-radius: 8px;
+      border-radius: 6px;
       color: var(--text-primary);
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       flex: 1;
-      min-width: 80px;
-      max-width: 110px;
+      min-width: 70px;
+      max-width: 100px;
       justify-content: center;
     }
 
@@ -755,18 +755,18 @@
 
     .submit-btn {
       width: 100%;
-      padding: 14px;
+      padding: 10px;
       border: none;
-      border-radius: 12px;
+      border-radius: 8px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .submit-btn.in-btn {
@@ -794,7 +794,7 @@
     .table-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
     }
 
@@ -802,22 +802,22 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
+      padding: 12px 16px;
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
     }
 
     .table-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
     }
 
     .record-count {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
       background: var(--bg-elevated);
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 20px;
     }
 
@@ -837,9 +837,9 @@
       position: sticky;
       top: 0;
       background: var(--bg-elevated);
-      padding: 12px 14px;
+      padding: 10px 12px;
       text-align: left;
-      font-size: 10px;
+      font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-secondary);
@@ -849,8 +849,8 @@
     }
 
     td {
-      padding: 14px;
-      font-size: 13px;
+      padding: 10px 12px;
+      font-size: 12px;
       border-bottom: 1px solid var(--border);
       vertical-align: middle;
     }
@@ -861,7 +861,7 @@
 
     .date-cell {
       font-family: 'Space Mono', monospace;
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-secondary);
       white-space: nowrap;
     }
@@ -1650,23 +1650,23 @@
 
     /* Dashboard Toggle */
     .dashboard-toggle {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .toggle-btn {
-      padding: 10px 20px;
+      padding: 8px 14px;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       color: var(--text-primary);
       font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .toggle-btn:hover {
@@ -1977,14 +1977,14 @@
     /* Search and Filter Section */
     .search-filter-section {
       display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 8px;
+      margin-bottom: 10px;
       flex-wrap: wrap;
     }
 
     .search-box {
       flex: 1;
-      min-width: 200px;
+      min-width: 180px;
       position: relative;
       display: flex;
       align-items: center;
@@ -1992,19 +1992,19 @@
 
     .search-icon {
       position: absolute;
-      left: 14px;
-      font-size: 14px;
+      left: 10px;
+      font-size: 12px;
       opacity: 0.6;
     }
 
     .search-box input {
       width: 100%;
-      padding: 12px 40px 12px 40px;
+      padding: 8px 32px 8px 32px;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       color: var(--text-primary);
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .search-box input:focus {
@@ -2015,15 +2015,15 @@
 
     .clear-search {
       position: absolute;
-      right: 12px;
+      right: 8px;
       background: var(--bg-elevated);
       border: none;
       color: var(--text-secondary);
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2036,19 +2036,19 @@
 
     .filter-group {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
     }
 
     .filter-group select {
-      padding: 12px 14px;
+      padding: 8px 10px;
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       color: var(--text-primary);
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
-      min-width: 130px;
+      min-width: 120px;
     }
 
     .filter-group select:focus {
@@ -2843,19 +2843,51 @@
 
     // Sort records by date (newest first) and time (newest first)
     function sortRecordsByDateTime(recordsArray) {
+      if (!recordsArray || !Array.isArray(recordsArray)) return [];
+      
       return recordsArray.sort((a, b) => {
-        // Compare dates first
-        const dateA = a.date ? new Date(a.date + 'T00:00:00') : new Date(0);
-        const dateB = b.date ? new Date(b.date + 'T00:00:00') : new Date(0);
+        // Parse dates properly - handle various formats
+        let dateA, dateB;
         
-        if (dateB.getTime() !== dateA.getTime()) {
-          return dateB.getTime() - dateA.getTime(); // Newest date first
+        try {
+          // Try to parse date string (YYYY-MM-DD format)
+          if (a.date) {
+            const partsA = a.date.split('-');
+            if (partsA.length === 3) {
+              dateA = new Date(parseInt(partsA[0]), parseInt(partsA[1]) - 1, parseInt(partsA[2]));
+            } else {
+              dateA = new Date(a.date);
+            }
+          } else {
+            dateA = new Date(0);
+          }
+          
+          if (b.date) {
+            const partsB = b.date.split('-');
+            if (partsB.length === 3) {
+              dateB = new Date(parseInt(partsB[0]), parseInt(partsB[1]) - 1, parseInt(partsB[2]));
+            } else {
+              dateB = new Date(b.date);
+            }
+          } else {
+            dateB = new Date(0);
+          }
+        } catch (e) {
+          console.error('Date parsing error:', e);
+          dateA = new Date(0);
+          dateB = new Date(0);
         }
         
-        // If same date, compare times
+        // Compare dates (newest first)
+        const dateCompare = dateB.getTime() - dateA.getTime();
+        if (dateCompare !== 0) {
+          return dateCompare;
+        }
+        
+        // If same date, compare times (newest first)
         const timeA = a.time || '00:00';
         const timeB = b.time || '00:00';
-        return timeB.localeCompare(timeA); // Newest time first
+        return timeB.localeCompare(timeA);
       });
     }
 
@@ -3700,8 +3732,8 @@
       };
       
       // Apply filters
-      filteredRecords.in = records.in.filter(filterFn);
-      filteredRecords.out = records.out.filter(filterFn);
+      filteredRecords.in = sortRecordsByDateTime(records.in.filter(filterFn));
+      filteredRecords.out = sortRecordsByDateTime(records.out.filter(filterFn));
       
       // Update table
       updateTableWithFiltered();
@@ -3717,7 +3749,9 @@
     
     function updateTableWithFiltered() {
       const tbody = document.getElementById('tableBody');
-      const data = filteredRecords[currentTab];
+      
+      // ALWAYS sort before displaying
+      let data = sortRecordsByDateTime([...filteredRecords[currentTab]]);
       const allData = records[currentTab];
       const countEl = document.getElementById('recordCount');
       
