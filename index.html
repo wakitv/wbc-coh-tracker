@@ -428,6 +428,24 @@
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
+    /* Fix select dropdown styling for dark theme */
+    select {
+      background-color: var(--bg-elevated);
+      color-scheme: dark;
+    }
+
+    select option {
+      background-color: #1a1a2e;
+      color: #e8e8e8;
+      padding: 10px;
+    }
+
+    select optgroup {
+      background-color: #12121f;
+      color: #888;
+      font-weight: 600;
+    }
+
     input:focus, select:focus, textarea:focus {
       outline: none;
       border-color: var(--accent-in);
@@ -1974,17 +1992,16 @@
     .insight-bar-fill.expense { background: var(--accent-out); }
     .insight-bar-fill.income { background: var(--accent-in); }
 
-    /* Search and Filter Section */
+    /* Search and Filter Section - Same layout on all devices */
     .search-filter-section {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr;
       gap: 8px;
       margin-bottom: 10px;
-      flex-wrap: wrap;
     }
 
     .search-box {
-      flex: 1;
-      min-width: 180px;
+      width: 100%;
       position: relative;
       display: flex;
       align-items: center;
@@ -1992,14 +2009,14 @@
 
     .search-icon {
       position: absolute;
-      left: 10px;
-      font-size: 12px;
+      left: 12px;
+      font-size: 14px;
       opacity: 0.6;
     }
 
     .search-box input {
       width: 100%;
-      padding: 8px 32px 8px 32px;
+      padding: 10px 36px 10px 36px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -2015,15 +2032,15 @@
 
     .clear-search {
       position: absolute;
-      right: 8px;
+      right: 10px;
       background: var(--bg-elevated);
       border: none;
       color: var(--text-secondary);
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 10px;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2035,20 +2052,39 @@
     }
 
     .filter-group {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
 
     .filter-group select {
-      padding: 8px 10px;
+      width: 100%;
+      padding: 10px 12px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--text-primary);
       font-size: 12px;
       cursor: pointer;
-      min-width: 120px;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+
+    .filter-group select option {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 10px;
+    }
+
+    .filter-group select optgroup {
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-weight: 600;
     }
 
     .filter-group select:focus {
@@ -2118,19 +2154,6 @@
         flex: 1;
         padding: 10px 12px;
         font-size: 12px;
-      }
-      
-      .search-filter-section {
-        flex-direction: column;
-      }
-      
-      .filter-group {
-        width: 100%;
-      }
-      
-      .filter-group select {
-        flex: 1;
-        min-width: 0;
       }
     }
     
