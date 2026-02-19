@@ -967,12 +967,12 @@
       color: var(--bg-primary);
     }
 
-    .receipt-link.folder {
+    .receipt-link.blue {
       background: rgba(77, 159, 255, 0.15);
       color: var(--accent-blue);
     }
 
-    .receipt-link.folder:hover {
+    .receipt-link.blue:hover {
       background: var(--accent-blue);
       color: white;
     }
@@ -3818,20 +3818,14 @@
         if (record.receipt) {
           if (record.receipt.startsWith('data:image')) {
             receiptHtml = `<img src="${record.receipt}" class="receipt-thumb" onclick="showReceiptImage('${record.id}')" alt="Receipt">`;
-          } else if (record.receipt.includes('drive.google.com/drive/folders')) {
-            // Folder link - multiple photos
-            const photoCount = record.receiptCount || 'Multiple';
-            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link folder">📁 ${photoCount} Photos</a>`;
-          } else if (record.receipt.includes('drive.google.com') || record.receipt.startsWith('https://')) {
-            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link">📷 View</a>`;
+          } else if (record.receipt.includes('drive.google.com')) {
+            // All Drive links (single or folder) show as blue "📷 View"
+            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link blue">📷 View</a>`;
+          } else if (record.receipt.startsWith('https://')) {
+            receiptHtml = `<a href="${record.receipt}" target="_blank" class="receipt-link blue">📷 View</a>`;
           }
         } else if (record.receiptUrl) {
-          if (record.receiptUrl.includes('drive.google.com/drive/folders')) {
-            const photoCount = record.receiptCount || 'Multiple';
-            receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link folder">📁 ${photoCount} Photos</a>`;
-          } else {
-            receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link">📷 View</a>`;
-          }
+          receiptHtml = `<a href="${record.receiptUrl}" target="_blank" class="receipt-link blue">📷 View</a>`;
         }
         
         const displayDate = formatDate(record.date);
@@ -4190,16 +4184,16 @@
       updatePhotosPreview();
     }
 
-    // Compress image to reduce file size for upload
-    function compressImage(base64, maxWidth = 800, quality = 0.7) {
+    // Compress image to reduce file size for upload - OPTIMIZED for speed
+    function compressImage(base64, maxWidth = 600, quality = 0.5) {
       return new Promise((resolve, reject) => {
         const img = new Image();
         
-        // Timeout after 10 seconds
+        // Faster timeout - 5 seconds
         const timeout = setTimeout(() => {
-          console.log('Image compression timeout, using reduced quality');
+          console.log('Image compression timeout');
           reject(new Error('Compression timeout'));
-        }, 10000);
+        }, 5000);
         
         img.onload = function() {
           clearTimeout(timeout);
@@ -4209,29 +4203,16 @@
             let width = img.width;
             let height = img.height;
             
-            console.log('Original image size:', width, 'x', height);
-            
-            // More aggressive resize for large images
-            const maxDimension = Math.max(width, height);
-            if (maxDimension > 1500) {
-              maxWidth = 600;  // Even smaller for very large images
-              quality = 0.5;
-            }
-            
-            // Calculate new dimensions maintaining aspect ratio
-            if (width > height) {
-              if (width > maxWidth) {
+            // Aggressive resize for faster upload
+            if (width > maxWidth || height > maxWidth) {
+              if (width > height) {
                 height = Math.round((height * maxWidth) / width);
                 width = maxWidth;
-              }
-            } else {
-              if (height > maxWidth) {
+              } else {
                 width = Math.round((width * maxWidth) / height);
                 height = maxWidth;
               }
             }
-            
-            console.log('Compressed size:', width, 'x', height, 'Quality:', quality);
             
             canvas.width = width;
             canvas.height = height;
@@ -4244,24 +4225,10 @@
             // Convert to compressed JPEG
             const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
             
-            const originalKB = Math.round(base64.length / 1024);
             const compressedKB = Math.round(compressedBase64.length / 1024);
-            console.log('Compression:', originalKB + 'KB ->', compressedKB + 'KB');
+            console.log('Compressed to:', compressedKB + 'KB');
             
-            // If still too large, compress more
-            if (compressedKB > 500) {
-              console.log('Still too large, compressing more...');
-              canvas.width = Math.round(width * 0.7);
-              canvas.height = Math.round(height * 0.7);
-              ctx.fillStyle = '#FFFFFF';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              const extraCompressed = canvas.toDataURL('image/jpeg', 0.4);
-              console.log('Extra compressed:', Math.round(extraCompressed.length / 1024) + 'KB');
-              resolve(extraCompressed);
-            } else {
-              resolve(compressedBase64);
-            }
+            resolve(compressedBase64);
           } catch (err) {
             console.error('Canvas error:', err);
             reject(err);
@@ -4286,7 +4253,7 @@
       document.getElementById('galleryInput').value = '';
     }
 
-    // Form Submission
+    // Form Submission - OPTIMIZED for instant save
     async function handleSubmit(e) {
       e.preventDefault();
       
@@ -4301,7 +4268,7 @@
       if (submitBtn.disabled) return;
       
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<div class="spinner"></div> Processing photos...';
+      submitBtn.innerHTML = '<div class="spinner"></div> Saving...';
       
       try {
         // Use first photo as primary receipt
@@ -4317,41 +4284,22 @@
           amount: parseFloat(document.getElementById('entryAmount').value) || 0,
           fee: parseFloat(document.getElementById('entryFee').value) || 0,
           receipt: primaryReceipt,
-          receipts: currentPhotos.map(p => p.data), // Store all photos
+          receipts: currentPhotos.map(p => p.data),
           receiptCount: currentPhotos.length,
           type: currentTab,
-          pendingSync: !navigator.onLine // Mark as pending if offline
+          pendingSync: true // Will sync in background
         };
         
-        // Add entry to records
+        // ===== INSTANT LOCAL SAVE =====
         records[currentTab].push(entry);
-        
-        // Sort records by date and time (newest first)
         records[currentTab] = sortRecordsByDateTime(records[currentTab]);
-        
-        // Save to localStorage
         saveToStorage();
         
-        // Update filtered records and UI
+        // Update UI immediately
         filteredRecords[currentTab] = [...records[currentTab]];
         updateUI();
         
-        // Auto-sync to Google Sheets if online
-        if (googleSheetsUrl && navigator.onLine) {
-          submitBtn.innerHTML = '<div class="spinner"></div> Syncing...';
-          await sendToGoogleSheets('ADD', entry);
-          
-          // Mark as synced
-          const entryIndex = records[currentTab].findIndex(r => r.id === entry.id);
-          if (entryIndex !== -1) {
-            records[currentTab][entryIndex].pendingSync = false;
-            saveToStorage();
-          }
-        } else if (!navigator.onLine) {
-          showToast('📴 Saved offline - will sync when online', 'warning');
-        }
-        
-        // Reset form
+        // Reset form immediately
         document.getElementById('entryCategory').value = '';
         document.getElementById('entryRemarks').value = '';
         document.getElementById('entryAmount').value = '';
@@ -4359,30 +4307,56 @@
         removePhoto();
         setDefaultDateTime();
         
-        // Collapse form after successful submission
+        // Collapse form
         document.getElementById('formPanel').classList.add('collapsed');
         localStorage.setItem('formCollapsed', 'true');
         
-        // Log the activity
-        addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()} ${entry.remarks ? '(' + entry.remarks + ')' : ''}`);
+        // Log activity
+        addLocalLog('ADD', currentTab, `${entry.category} - ₱${entry.amount.toLocaleString()}`);
         
-        if (navigator.onLine) {
-          showToast(`Entry added successfully!`, 'success');
-        }
+        // Show success immediately
+        showToast('✅ Entry saved!', 'success');
         
-        // Refresh data from cloud after 3 seconds (let the server process first)
+        // Reset button immediately
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>➕</span> Add Fund ${currentTab === 'in' ? 'In' : 'Out'} Entry`;
+        
+        // ===== BACKGROUND CLOUD SYNC =====
         if (googleSheetsUrl && navigator.onLine) {
-          setTimeout(() => {
-            syncFromGoogleSheets(true); // Silent sync
-          }, 3000);
+          // Non-blocking background sync
+          syncEntryToCloud(entry);
+        } else if (!navigator.onLine) {
+          showToast('📴 Will sync when online', 'warning');
         }
         
       } catch (err) {
         console.error('Submit error:', err);
         showToast('Error saving entry', 'error');
-      } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>➕</span> Add Fund ${currentTab === 'in' ? 'In' : 'Out'} Entry`;
+      }
+    }
+    
+    // Background sync function (non-blocking)
+    async function syncEntryToCloud(entry) {
+      try {
+        await sendToGoogleSheets('ADD', entry);
+        
+        // Mark as synced
+        const entryIndex = records[entry.type].findIndex(r => r.id === entry.id);
+        if (entryIndex !== -1) {
+          records[entry.type][entryIndex].pendingSync = false;
+          saveToStorage();
+        }
+        
+        // Silent refresh after 3 seconds
+        setTimeout(() => {
+          syncFromGoogleSheets(true);
+        }, 3000);
+        
+      } catch (err) {
+        console.error('Background sync error:', err);
+        // Entry is already saved locally, will retry later
       }
     }
 
@@ -4740,33 +4714,12 @@
         console.log('[EDIT] Updated record - receipt:', updatedRecord.receipt ? 'exists' : 'null');
         console.log('[EDIT] Updated record - receiptUrl:', updatedRecord.receiptUrl || 'null');
         
-        // IMPORTANT: Directly replace at the specific index only
+        // ===== INSTANT LOCAL SAVE =====
         records[targetType][recordIndex] = updatedRecord;
-        
-        // Sort records by date and time (in case date was changed)
         records[targetType] = sortRecordsByDateTime(records[targetType]);
-        
-        // Save to localStorage
         saveToStorage();
         
-        // Sync to Google Sheets if online
-        if (googleSheetsUrl && navigator.onLine) {
-          saveBtn.innerHTML = '<div class="spinner"></div> Syncing to cloud...';
-          
-          try {
-            const syncResult = await sendToGoogleSheets('EDIT', updatedRecord);
-            console.log('[EDIT] Sync result:', syncResult);
-          } catch (syncErr) {
-            console.error('[EDIT] Sync error:', syncErr);
-            // Don't fail the edit - local is already saved
-            showToast('Saved locally. Cloud sync may have failed.', 'warning');
-          }
-        }
-        
-        // Log the activity
-        addLocalLog('EDIT', targetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()}`);
-        
-        // Refresh display
+        // Update UI immediately
         filteredRecords[targetType] = [...records[targetType]];
         if (document.getElementById('searchInput').value || 
             document.getElementById('dateFilter').value !== 'all' ||
@@ -4776,21 +4729,32 @@
         }
         updateUI();
         
-        // Close modal and show success
-        closeEditModal();
-        showToast('✅ Entry updated successfully!', 'success');
+        // Log activity
+        addLocalLog('EDIT', targetType, `${updatedRecord.category} - ₱${updatedRecord.amount.toLocaleString()}`);
         
-        // Refresh data from cloud after 2 seconds
+        // Close modal and show success immediately
+        closeEditModal();
+        showToast('✅ Entry updated!', 'success');
+        
+        // Reset button
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '💾 Save Changes';
+        
+        // ===== BACKGROUND CLOUD SYNC =====
         if (googleSheetsUrl && navigator.onLine) {
-          setTimeout(() => {
-            syncFromGoogleSheets();
-          }, 2000);
+          // Non-blocking background sync
+          sendToGoogleSheets('EDIT', updatedRecord).then(() => {
+            setTimeout(() => syncFromGoogleSheets(true), 2000);
+          }).catch(err => {
+            console.error('[EDIT] Background sync error:', err);
+          });
         }
+        
+        return; // Exit early - everything is done
         
       } catch (err) {
         console.error('[EDIT] Error:', err);
         showToast('Error: ' + err.message, 'error');
-      } finally {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '💾 Save Changes';
       }
@@ -5496,25 +5460,19 @@
         
         if (photosToUpload.length > 0 && photosToUpload[0] && photosToUpload[0].startsWith('data:image')) {
           hasLocalReceipt = true;
-          document.getElementById('statusText').textContent = `Compressing ${photosToUpload.length} photo(s)...`;
           
           for (let i = 0; i < photosToUpload.length; i++) {
             try {
               const compressed = await compressImage(photosToUpload[i], 600, 0.5);
               const sizeKB = Math.round(compressed.length / 1024);
-              console.log(`Photo ${i+1} size: ${sizeKB}KB`);
               
               if (sizeKB <= 800) {
                 compressedReceipts.push(compressed);
-              } else {
-                console.log(`Photo ${i+1} too large, skipping`);
               }
             } catch (compressError) {
               console.error(`Compression failed for photo ${i+1}:`, compressError);
             }
           }
-          
-          console.log(`Compressed ${compressedReceipts.length} of ${photosToUpload.length} photos`);
         }
         
         const payload = {
@@ -5536,16 +5494,14 @@
           timestamp: new Date().toISOString()
         };
         
-        document.getElementById('statusText').textContent = compressedReceipts.length > 0 
-          ? `Uploading ${compressedReceipts.length} photo(s)...` 
-          : 'Saving...';
+        document.getElementById('statusText').textContent = 'Syncing...';
         
         console.log('Sending to Google Sheets:', action, 
           'Photos:', compressedReceipts.length,
           'ExistingURL:', existingReceiptUrl ? 'yes' : 'no');
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 second timeout for multiple photos
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
         
         const response = await fetch(googleSheetsUrl, {
           method: 'POST',
