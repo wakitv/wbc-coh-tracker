@@ -2415,13 +2415,13 @@
         <div class="form-content" id="formContent">
         <form id="entryForm" onsubmit="handleSubmit(event)">
           <div class="form-row">
-            <div class="form-group">
+            <div class="form-group" id="dateGroup">
               <label>Date <span class="required">*</span></label>
               <input type="date" id="entryDate" required>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="timeGroup" style="display: none;">
               <label>Time <span class="required">*</span></label>
-              <input type="time" id="entryTime" required>
+              <input type="time" id="entryTime">
             </div>
           </div>
 
@@ -2651,13 +2651,13 @@
         <input type="hidden" id="editType">
         
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-group" id="editDateGroup">
             <label>Date</label>
             <input type="date" id="editDate" required>
           </div>
-          <div class="form-group">
+          <div class="form-group" id="editTimeGroup">
             <label>Time</label>
-            <input type="time" id="editTime" required>
+            <input type="time" id="editTime">
           </div>
         </div>
 
@@ -3831,11 +3831,15 @@
         const displayDate = formatDate(record.date);
         const displayTime = formatTime(record.time);
         
+        // For Fund In, show only date; for Fund Out, show date and time
+        const dateDisplay = currentTab === 'in' 
+          ? displayDate
+          : `${displayDate}<br><span style="color: var(--text-muted)">${displayTime}</span>`;
+        
         return `
           <tr>
             <td class="date-cell">
-              ${displayDate}<br>
-              <span style="color: var(--text-muted)">${displayTime}</span>
+              ${dateDisplay}
             </td>
             <td>
               <span class="shift-badge ${getShiftClass(record.shift)}">${record.shift || '-'}</span>
@@ -3926,6 +3930,8 @@
       const submitBtn = document.getElementById('submitBtn');
       const categorySelect = document.getElementById('entryCategory');
       const categoryFilter = document.getElementById('categoryFilter');
+      const timeGroup = document.getElementById('timeGroup');
+      const dateGroup = document.getElementById('dateGroup');
       
       // Update category options for form
       categorySelect.innerHTML = '<option value="">Select Category</option>';
@@ -3960,6 +3966,9 @@
         submitBtn.className = 'submit-btn in-btn';
         submitBtn.innerHTML = '<span>➕</span> Add Fund In Entry';
         document.getElementById('tableTitle').textContent = 'Fund In Records';
+        // Hide time field for Fund In
+        timeGroup.style.display = 'none';
+        dateGroup.style.flex = '1';
       } else {
         formPanel.classList.add('out-mode');
         formTitle.className = 'form-title out';
@@ -3967,6 +3976,9 @@
         submitBtn.className = 'submit-btn out-btn';
         submitBtn.innerHTML = '<span>➕</span> Add Fund Out Entry';
         document.getElementById('tableTitle').textContent = 'Fund Out Records';
+        // Show time field for Fund Out
+        timeGroup.style.display = 'block';
+        dateGroup.style.flex = '';
       }
       
       // Apply filters to new tab
@@ -4274,10 +4286,15 @@
         // Use first photo as primary receipt
         const primaryReceipt = currentPhotos[0]?.data || null;
         
+        // For Fund In, auto-generate time; for Fund Out, use form time
+        const entryTime = currentTab === 'in' 
+          ? new Date().toTimeString().slice(0, 5) // Auto-generate current time
+          : document.getElementById('entryTime').value;
+        
         const entry = {
           id: Date.now().toString(),
           date: document.getElementById('entryDate').value,
-          time: document.getElementById('entryTime').value,
+          time: entryTime,
           shift: document.getElementById('entryShift').value,
           category: document.getElementById('entryCategory').value,
           remarks: document.getElementById('entryRemarks').value,
@@ -4436,12 +4453,22 @@
       modal.classList.remove('in-mode', 'out-mode');
       modal.classList.add(type + '-mode');
       
+      // Show/hide time field based on type
+      const editTimeGroup = document.getElementById('editTimeGroup');
+      const editDateGroup = document.getElementById('editDateGroup');
+      
       if (type === 'in') {
         modalTitle.innerHTML = '<div class="icon">✏️</div><span>Edit Fund In Entry</span>';
         saveBtn.style.background = 'var(--accent-in)';
+        // Hide time field for Fund In
+        editTimeGroup.style.display = 'none';
+        editDateGroup.style.flex = '1';
       } else {
         modalTitle.innerHTML = '<div class="icon">✏️</div><span>Edit Fund Out Entry</span>';
         saveBtn.style.background = 'var(--accent-out)';
+        // Show time field for Fund Out
+        editTimeGroup.style.display = 'block';
+        editDateGroup.style.flex = '';
       }
       
       // Show modal
@@ -4694,10 +4721,15 @@
         }
         
         // Create updated record - MUST keep the same ID
+        // For Fund In, keep original time; for Fund Out, use form time
+        const editTime = targetType === 'in' 
+          ? (originalRecord.time || new Date().toTimeString().slice(0, 5))
+          : document.getElementById('editTime').value;
+        
         const updatedRecord = {
           id: originalRecord.id, // CRITICAL: Keep exact same ID
           date: document.getElementById('editDate').value,
-          time: document.getElementById('editTime').value,
+          time: editTime,
           shift: document.getElementById('editShift').value,
           category: document.getElementById('editCategory').value,
           remarks: document.getElementById('editRemarks').value,
