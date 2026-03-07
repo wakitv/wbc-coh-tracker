@@ -893,9 +893,9 @@
       white-space: nowrap;
     }
 
-    .shift-morning { background: rgba(255, 217, 61, 0.15); color: #ffd93d; }
-    .shift-afternoon { background: rgba(77, 159, 255, 0.15); color: #4d9fff; }
-    .shift-night { background: rgba(157, 78, 221, 0.15); color: #9d4edd; }
+    .shift-morning { background: rgba(236, 72, 153, 0.15); color: #ec4899; }  /* 4AM-12NN - Pink */
+    .shift-afternoon { background: rgba(59, 130, 246, 0.15); color: #3b82f6; } /* 12NN-8PM - Blue */
+    .shift-night { background: rgba(16, 185, 129, 0.15); color: #10b981; }     /* 8PM-4AM - Green */
 
     .category-badge {
       display: inline-block;
@@ -4286,9 +4286,9 @@
         // Use first photo as primary receipt
         const primaryReceipt = currentPhotos[0]?.data || null;
         
-        // For Fund In, auto-generate time; for Fund Out, use form time
+        // For Fund In, no time; for Fund Out, use form time
         const entryTime = currentTab === 'in' 
-          ? new Date().toTimeString().slice(0, 5) // Auto-generate current time
+          ? '' // No time for Fund In
           : document.getElementById('entryTime').value;
         
         const entry = {
@@ -4721,9 +4721,9 @@
         }
         
         // Create updated record - MUST keep the same ID
-        // For Fund In, keep original time; for Fund Out, use form time
+        // For Fund In, no time; for Fund Out, use form time
         const editTime = targetType === 'in' 
-          ? (originalRecord.time || new Date().toTimeString().slice(0, 5))
+          ? '' // No time for Fund In
           : document.getElementById('editTime').value;
         
         const updatedRecord = {
@@ -5330,9 +5330,10 @@
     }
 
     function getShiftClass(shift) {
-      if (shift.includes('4AM')) return 'shift-morning';
-      if (shift.includes('12NN')) return 'shift-afternoon';
-      return 'shift-night';
+      const s = (shift || '').toUpperCase();
+      if (s.startsWith('4AM') || s === '4AM-12NN') return 'shift-morning';   // 4AM-12NN - Pink
+      if (s.startsWith('12NN') || s === '12NN-8PM') return 'shift-afternoon'; // 12NN-8PM - Blue
+      return 'shift-night'; // 8PM-4AM - Green
     }
 
     function getCategoryClass(cat) {
